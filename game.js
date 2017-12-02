@@ -220,15 +220,15 @@ function createGameObject(img,x,y,z) {
 
 
 
-var playerX=0,playerY=0,playerDX=0,playerDY=0,playerSpeed=4.25;
+var playerX=0,playerY=0,playerDX=0,playerDY=0,playerSpeed=2;
 function createPlayer() {
 	playerX=Math.round(mapsize/2)*tilesize; playerY=Math.round(mapsize/2)*tilesize;
 	document.getElementById("gameinner2").insertAdjacentHTML('afterbegin', "<div id='playerAvatar' style='left: "+playerX+"px; top: "+playerY+"px; background-color: transparent; background-image: url(graphics/playermd.gif); background-size: contain; width: "+tilesize+"px; height: "+tilesize+"px; position: absolute;'></div>");
 	hidemenus(); isGameActive=true; requestAnimationFrame(doAnimations);
 }
-document.onkeydown = checkKey;
-document.onkeyup = checkKey;
-function checkKey(e) {
+document.onkeydown = checkKeyDown;
+document.onkeyup = checkKeyUp;
+function checkKeyDown(e) {
 	if(!isGameActive) return;
 	e = e || window.event;
 	if (e.keyCode == '38') playerDY=-1;
@@ -236,6 +236,14 @@ function checkKey(e) {
 	else if (e.keyCode == '37') playerDX=-1;
 	else if (e.keyCode == '39') playerDX=1;
 }
+
+function checkKeyUp(e) {
+	if(!isGameActive) return;
+	e = e || window.event;
+	if(e.keyCode == '38' || e.keyCode == '40') playerDY = 0;
+	else if(e.keyCode == '37' || e.keyCode == '39') playerDX = 0;
+}
+
 setInterval(function() {
 	if(!isGameActive) return;
 	playerX+=playerDX*playerSpeed;
@@ -244,8 +252,7 @@ setInterval(function() {
 	else if(playerDX==1) document.getElementById("playerAvatar").style.backgroundImage="url(graphics/playermr.gif)";
 	else if(playerDY==-1) document.getElementById("playerAvatar").style.backgroundImage="url(graphics/playermu.gif)";
 	else document.getElementById("playerAvatar").style.backgroundImage="url(graphics/playermd.gif)";
-	playerDY=0; playerDX=0;
-},30);
+},15);
 doAnimations=function() {
 	document.getElementById('playerAvatar').style.left = playerX+"px";
 	document.getElementById('playerAvatar').style.top = playerY+"px";
