@@ -136,6 +136,10 @@ GAME
 
 */
 
+var bulletSpeed = 5;
+var bullets = [];
+var maxBullets = 25;
+
 gamemap=[];
 mapsize=150;
 tilesize=20;
@@ -214,12 +218,12 @@ function renderGameTiles() {
 		}
 	}
 }
+
 function createGameObject(img,x,y,z) {
 	x+=mappadding;y+=mappadding;
 	if(typeof z==="undefined") z=y;
 	else z+=mappadding;
 	document.getElementById("gameinner2").insertAdjacentHTML('afterbegin', "<div class='gaiaObj' style='left: "+x+"px; top: "+y+"px; z-index: "+z+"; position: absolute;'><img src=\""+img.src+"\"></div>"); }
-
 
 var mappadding=2500;
 var playerX=0,playerY=0,playerDX=0,playerDY=0,playerSpeed=2;
@@ -235,6 +239,8 @@ function canMove(x,y) {
 	x=Math.floor(x/20); y=Math.floor((y+5)/20);
 	return gamemap[x*mapsize+y]==1&&gamemap[x2*mapsize+y2]==1;
 }
+
+document.onmousedown = checkMouseDown;
 document.onkeydown = checkKeyDown;
 document.onkeyup = checkKeyUp;
 function checkKeyDown(e) {
@@ -253,6 +259,36 @@ function checkKeyUp(e) {
 	else if(e.keyCode == '37' || e.keyCode == '39') playerDX = 0;
 }
 
+function checkMouseDown(e) {
+	if(!isGameActive) return;
+	e = e || window.event;
+	// 1 is left mouse button
+	if(e.which == 1) playerShootBullet(e.clientX, e.clientY);
+}
+
+function playerShootBullet(clickX, clickY) {
+	var angle = Math.atan((clickY - playerY) / (clickX - playerX))
+	var bulletDY = Math.sin(angle);
+	var bulletDX = Math.cos(angle);
+	if(bullets.length >= maxBullets) bullets.shift();
+	bullets.push(new Bullet(playerX, playerY, bulletDX, bulletDY));
+	console.log(bullets.length);
+}
+
+function Bullet(x, y, dx, dy) {
+	this.x = x;
+	this.y = y;
+	this.dx = dx;
+	this.dy = dy;
+}
+
+function updateBullets() {
+	for(var i = 0; i < bullets.length; i++) {
+		bullets[i].x += bullets[i].dx * bulletSpeed;
+		bullets[i].y += bullets[i].dy * bulletSpeed;
+	}
+}
+
 setInterval(function() {
 	if(!isGameActive) return;
 	if(canMove(playerX+playerDX*playerSpeed,playerY+playerDY*playerSpeed)) {
@@ -263,6 +299,8 @@ setInterval(function() {
 	else if(playerDX==1) document.getElementById("playerAvatar").style.backgroundImage="url(graphics/playermr.gif)";
 	else if(playerDY==-1) document.getElementById("playerAvatar").style.backgroundImage="url(graphics/playermu.gif)";
 	else document.getElementById("playerAvatar").style.backgroundImage="url(graphics/playermd.gif)";
+	
+	updateBullets();
 },15);
 doAnimations=function() {
 	document.getElementById('playerAvatar').style.left = playerX+"px";
