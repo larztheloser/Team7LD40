@@ -94,13 +94,13 @@ function hidemenus() {
 onload=function() {
 	ap("<div id='menus'></div>");
 	ap("<div id='game'></div>");
-	loadGame(); mainMenu();
+	loadGame();
 };
 
 function loadGame() {
-	var assetsLoaded=0, assetstotal=0;
+	var assetsLoaded=0, assetstotal=27;
 	var assetCheck=function() { assetsLoaded++; if(assetsLoaded==assetstotal) mainMenu(); }.bind(this);
-	var pushasset=function(name,path) { assetstotal++; var to=new Image(); to.onload=function() { addResource(name,to); assetCheck(); }.bind(this); to.src=path; };
+	var pushasset=function(name,path) { var to=new Image(); to.onload=function() { addResource(name,to); assetCheck(); }.bind(this); to.src=path; };
 
 	pushasset("player","graphics/playermd.gif");
 	pushasset("playermr","graphics/playermr.gif");
@@ -128,6 +128,8 @@ function loadGame() {
 	pushasset("windmill","graphics/windmill.gif");
 	pushasset("watertower","graphics/watertower.gif");
 	pushasset("skeleton","graphics/skeleton.gif");
+	on("scriptload",function(a) { if(a=="pathing.js") { assetsLoaded++; aStar=new PF.AStarFinder(); if(assetsLoaded==assetstotal) mainMenu(); } }.bind(this));
+	loadjscssfile("pathing.js","js");
 }
 
 /*
@@ -146,11 +148,15 @@ tilesize=20;
 //current random maps: arena, valleys
 mapstyle="arena";
 isGameActive=false;
+pathfinder=false;
+aStar={};
 
 function generateMap() {
+	pathfinder=new PF.Grid(mapsize, mapsize);
 	for(var row=0;row<mapsize;row++) {
 		for(var col=0;col<mapsize;col++) {
 			gamemap[row*mapsize+col]=0;
+			pathfinder.setWalkableAt(row, col, false);
 		}
 	}
 	var halfmapsize=Math.round(mapsize/2);
@@ -177,6 +183,7 @@ function generateMap() {
 				case 4: goRight(); break;
 			}
 			gamemap[cpos]=1;
+			pathfinder.setWalkableAt(getY(), getX(), true);
 			if(Math.random()<0.005) break;
 		}
 	}
@@ -217,6 +224,81 @@ function renderGameTiles() {
 			if(Math.random()<0.0005 && gp(row,col)) createGameObject(getResource("watertower"), row*tilesize, col*tilesize-20,col*tilesize);
 		}
 	}
+	for(var i=0;i<200;i++) { spawnEnemyNearEdge(); }
+}
+
+enemyCounter=0;
+activeEnemies=[];
+function spawnEnemyNearEdge() {
+	var x,y;
+	switch(Math.floor(Math.random()*4)+1) {
+		case 1:
+			y=mappadding; x=mappadding+parseInt(Math.random()*mapsize)*tilesize;
+			while(!canMove(x,y)) {
+				y+=tilesize;
+				if(y>=mappadding+tilesize*mapsize) return; }
+			break;
+		case 2:
+			x=mappadding; y=mappadding+parseInt(Math.random()*mapsize)*tilesize;
+			while(!canMove(x,y)) {
+				x+=tilesize;
+				if(x>=mappadding+tilesize*mapsize) return; }
+			break;
+		case 3:
+			y=mappadding+mapsize*tilesize; x=mappadding+parseInt(Math.random()*mapsize)*tilesize;
+			while(!canMove(x,y)) {
+				y-=tilesize;
+				if(y<=mappadding) return; }
+			break;
+		default:
+			x=mappadding+mapsize*tilesize; y=mappadding+parseInt(Math.random()*mapsize)*tilesize;
+			while(!canMove(x,y)) {
+				x-=tilesize;
+				if(x<=mappadding) return; }
+			break;
+	}
+	activeEnemies.push({
+		id: "enemy"+enemyCounter,
+		closeEnoughToPlayer: false,
+		nextPathingUpdate: -9999999999,
+		x:x, y:y, speed: playerSpeed*(Math.random()*0.5+0.4),
+		path:[]
+	});
+	document.getElementById("gameinner2").insertAdjacentHTML('beforeend', "<div class='enemy' id='enemy"+enemyCounter+"' style='left: "+x+"px; top: "+y+"px; z-index: "+y+"; position: absolute; width: 20px; height: 20px; background-color: red;'></div>");
+	enemyCounter++;
+}
+function updateEnemyPath(e) {
+	var DPx=Math.abs(playerX-e.x);
+	var DPy=Math.abs(playerY-e.y);
+	if(DPx<=tilesize+1&&DPy<=tilesize+1) { e.closeEnoughToPlayer=true; e.path=[]; }
+	else {
+		e.closeEnoughToPlayer=false;
+		var npather=pathfinder.clone();
+		e.path=aStar.findPath(Math.floor((e.x+6-mappadding)/tilesize), Math.floor((e.y+9-mappadding)/tilesize), Math.floor((playerX+6-mappadding)/tilesize), Math.floor((playerY+9-mappadding)/tilesize), npather);
+		if(e.path.length>=1) e.path.shift();
+		else console.log(e);
+	}
+	return e; }
+function updateEnemies() {
+	var tickTime=pt();
+	for(var i = 0; i < activeEnemies.length; i++) {
+		var e=activeEnemies[i];
+		//attacking logic goes here
+		if(e.nextPathingUpdate<=tickTime) { e=updateEnemyPath(e); e.nextPathingUpdate=tickTime+1500; activeEnemies[i]=e; }
+		if(e.closeEnoughToPlayer) continue;
+		if(e.path.length===0) continue;
+		nextSpot=e.path[0]; var nxX=nextSpot[0],nxY=nextSpot[1];
+		if(Math.abs(e.x-mappadding-nxX*tilesize)<=e.speed && Math.abs(e.y-mappadding-nxY*tilesize)<=e.speed) {
+			e.x=nxX*tilesize+mappadding; e.y=nxY*tilesize+mappadding; e.path.shift(); }
+		if(nxX*tilesize+mappadding>e.x) e.x+=e.speed;
+		if(nxX*tilesize+mappadding<e.x) e.x-=e.speed;
+		if(nxY*tilesize+mappadding>e.y) e.y+=e.speed;
+		if(nxY*tilesize+mappadding<e.y) e.y-=e.speed;
+		document.getElementById(e.id).style.left = e.x+"px";
+		document.getElementById(e.id).style.top = e.y+"px";
+		document.getElementById(e.id).style.zIndex = e.y;
+		activeEnemies[i]=e;
+	}
 }
 
 function createGameObject(img,x,y,z) {
@@ -229,14 +311,15 @@ var mappadding=2500;
 var playerX=0,playerY=0,playerDX=0,playerDY=0,playerSpeed=2;
 function createPlayer() {
 	playerX=Math.round(mapsize/2)*tilesize+mappadding; playerY=Math.round(mapsize/2)*tilesize+mappadding;
+	if(!canMove(playerX,playerY)) { while(!canMove(playerX,playerY)) { playerX+=tilesize; } }
 	document.getElementById("gameinner2").insertAdjacentHTML('afterbegin', "<div id='playerAvatar' style='left: "+playerX+"px; top: "+playerY+"px; background-color: transparent; background-image: url(graphics/playermd.gif); background-size: contain; width: "+tilesize+"px; height: "+tilesize+"px; position: absolute;'></div>");
 	hidemenus(); isGameActive=true; requestAnimationFrame(doAnimations);
 }
 
 function canMove(x,y) {
 	x-=mappadding; y-=mappadding;
-	x2=Math.floor((x+15)/20); y2=Math.floor((y+22)/20);
-	x=Math.floor(x/20); y=Math.floor((y+5)/20);
+	x2=Math.floor((x+15)/tilesize); y2=Math.floor((y+22)/tilesize);
+	x=Math.floor(x/tilesize); y=Math.floor((y+5)/tilesize);
 	return gamemap[x*mapsize+y]==1&&gamemap[x2*mapsize+y2]==1;
 }
 
@@ -301,6 +384,7 @@ setInterval(function() {
 	else document.getElementById("playerAvatar").style.backgroundImage="url(graphics/playermd.gif)";
 	
 	updateBullets();
+	updateEnemies();
 },15);
 doAnimations=function() {
 	document.getElementById('playerAvatar').style.left = playerX+"px";
