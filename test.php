@@ -13,7 +13,8 @@ html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; text-align: 
 	justify-content: center;
 	width: 100%;
 	height: 100%;
-	 -moz-user-select: none; -webkit-user-select: none; -ms-user-select:none; user-select:none;-o-user-select:none; 
+	 -moz-user-select: none; -webkit-user-select: none; -ms-user-select:none; user-select:none;-o-user-select:none;
+	 z-index: 10000000000000;
 }
 .menublock {
 	width: 300px;
@@ -46,11 +47,17 @@ html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; text-align: 
 	width: 300px;
 }
 #game {
-	max-width: 100%; max-height: 100%; overflow: hidden;
+	width: 100%; height: 100%; overflow: hidden; position: absolute;
+}
+#gameinner {
+	position: absolute; left: 50%; top: 50%; margin-left: -400px; width: 800px; margin-top: -300px; height: 600px; overflow: hidden;
+}
+#gameinner2 {
+	transform: scale(2.6);
 }
 </style>
 </head>
-<body oncontextmenu="return false;">
+<body oncontextmenu="return false;" unselectable="on" onselectstart="return false;">
 <script src="game.js?v=1"></script>
 </body>
 </html>
