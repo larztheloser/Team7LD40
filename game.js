@@ -246,17 +246,17 @@ document.onkeyup = checkKeyUp;
 function checkKeyDown(e) {
 	if(!isGameActive) return;
 	e = e || window.event;
-	if (e.keyCode == '38') playerDY=-1;
-	else if (e.keyCode == '40') playerDY=1;
-	else if (e.keyCode == '37') playerDX=-1;
-	else if (e.keyCode == '39') playerDX=1;
+	if (e.keyCode == '38' || e.keyCode == '87') playerDY=-1;
+	else if (e.keyCode == '40' || e.keyCode == '83') playerDY=1;
+	else if (e.keyCode == '37' || e.keyCode == '65') playerDX=-1;
+	else if (e.keyCode == '39' || e.keyCode == '68') playerDX=1;
 }
 
 function checkKeyUp(e) {
 	if(!isGameActive) return;
 	e = e || window.event;
-	if(e.keyCode == '38' || e.keyCode == '40') playerDY = 0;
-	else if(e.keyCode == '37' || e.keyCode == '39') playerDX = 0;
+	if(e.keyCode == '38' || e.keyCode == '40' || e.keyCode == '87' || e.keyCode == '83') playerDY = 0;
+	else if(e.keyCode == '37' || e.keyCode == '39' || e.keyCode == '65' || e.keyCode == '68') playerDX = 0;
 }
 
 function checkMouseDown(e) {
