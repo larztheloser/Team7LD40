@@ -220,14 +220,24 @@ function renderGameTiles() {
 }
 
 function createGameObject(img,x,y,z) {
+	x+=mappadding;y+=mappadding;
 	if(typeof z==="undefined") z=y;
+	else z+=mappadding;
 	document.getElementById("gameinner2").insertAdjacentHTML('afterbegin', "<div class='gaiaObj' style='left: "+x+"px; top: "+y+"px; z-index: "+z+"; position: absolute;'><img src=\""+img.src+"\"></div>"); }
 
+var mappadding=2500;
 var playerX=0,playerY=0,playerDX=0,playerDY=0,playerSpeed=2;
 function createPlayer() {
-	playerX=Math.round(mapsize/2)*tilesize; playerY=Math.round(mapsize/2)*tilesize;
+	playerX=Math.round(mapsize/2)*tilesize+mappadding; playerY=Math.round(mapsize/2)*tilesize+mappadding;
 	document.getElementById("gameinner2").insertAdjacentHTML('afterbegin', "<div id='playerAvatar' style='left: "+playerX+"px; top: "+playerY+"px; background-color: transparent; background-image: url(graphics/playermd.gif); background-size: contain; width: "+tilesize+"px; height: "+tilesize+"px; position: absolute;'></div>");
 	hidemenus(); isGameActive=true; requestAnimationFrame(doAnimations);
+}
+
+function canMove(x,y) {
+	x-=mappadding; y-=mappadding;
+	x2=Math.floor((x+15)/20); y2=Math.floor((y+22)/20);
+	x=Math.floor(x/20); y=Math.floor((y+5)/20);
+	return gamemap[x*mapsize+y]==1&&gamemap[x2*mapsize+y2]==1;
 }
 
 document.onmousedown = checkMouseDown;
@@ -281,8 +291,10 @@ function updateBullets() {
 
 setInterval(function() {
 	if(!isGameActive) return;
-	playerX+=playerDX*playerSpeed;
-	playerY+=playerDY*playerSpeed;
+	if(canMove(playerX+playerDX*playerSpeed,playerY+playerDY*playerSpeed)) {
+		playerX+=playerDX*playerSpeed;
+		playerY+=playerDY*playerSpeed;
+	}
 	if(playerDX==-1) document.getElementById("playerAvatar").style.backgroundImage="url(graphics/playerml.gif)";
 	else if(playerDX==1) document.getElementById("playerAvatar").style.backgroundImage="url(graphics/playermr.gif)";
 	else if(playerDY==-1) document.getElementById("playerAvatar").style.backgroundImage="url(graphics/playermu.gif)";
@@ -294,8 +306,8 @@ doAnimations=function() {
 	document.getElementById('playerAvatar').style.left = playerX+"px";
 	document.getElementById('playerAvatar').style.top = playerY+"px";
 	document.getElementById('playerAvatar').style.zIndex = playerY;
-	document.getElementById('gameinner').scrollLeft = (playerX-392)*2.6;
-	document.getElementById('gameinner').scrollTop = (playerY-1012)*2.6;
+	document.getElementById('gameinner').scrollLeft = (playerX-392)*2.6-mappadding*1.34;
+	document.getElementById('gameinner').scrollTop = (playerY-1012)*2.6-mappadding*1.62;
 	requestAnimationFrame(doAnimations);
 };
 

@@ -54,6 +54,7 @@ html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; text-align: 
 }
 #gameinner2 {
 	transform: scale(2.6);
+	padding: 2500px;
 }
 </style>
 </head>
