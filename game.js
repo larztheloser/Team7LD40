@@ -266,26 +266,43 @@ function checkMouseDown(e) {
 	if(e.which == 1) playerShootBullet(e.clientX, e.clientY);
 }
 
+bulletID = -1;
 function playerShootBullet(clickX, clickY) {
-	var angle = Math.atan((clickY - playerY) / (clickX - playerX))
+	bulletID++;
+	var centerX = window.innerWidth / 2;
+	var centerY = window.innerHeight / 2;
+	var angle = Math.atan2(clickY - centerY, clickX - centerX)
 	var bulletDY = Math.sin(angle);
 	var bulletDX = Math.cos(angle);
-	if(bullets.length >= maxBullets) bullets.shift();
-	bullets.push(new Bullet(playerX, playerY, bulletDX, bulletDY));
-	console.log(bullets.length);
+	if(bullets.length >= maxBullets) { 
+		document.getElementById('bullet'+bullets[0].bulletid).html = "";
+		bullets.shift();
+	}
+	bullet = new Bullet(playerX+tilesize/2, playerY+tilesize/2, bulletDX, bulletDY, bulletID);
+	bullets.push(bullet);
+	createBullet(bullet);
 }
 
-function Bullet(x, y, dx, dy) {
+function Bullet(x, y, dx, dy, bulletid) {
 	this.x = x;
 	this.y = y;
 	this.dx = dx;
 	this.dy = dy;
+	this.bulletid = bulletid;
+}
+
+bulletSize = 2;
+function createBullet(bullet) {
+	document.getElementById("gameinner2").insertAdjacentHTML('afterbegin', "<div id='bullet"+bullet.bulletid+"' style='left: "+bullet.x+"px; top: "+bullet.y+"px; background-color: #000000; background-size: contain; width: "+bulletSize+"px; height: "+bulletSize+"px; position: absolute;'></div>");
 }
 
 function updateBullets() {
 	for(var i = 0; i < bullets.length; i++) {
 		bullets[i].x += bullets[i].dx * bulletSpeed;
 		bullets[i].y += bullets[i].dy * bulletSpeed;
+		document.getElementById('bullet'+bullets[i].bulletid).style.left = bullets[i].x+"px";
+		document.getElementById('bullet'+bullets[i].bulletid).style.top = bullets[i].y+"px";
+		document.getElementById('bullet'+bullets[i].bulletid).style.zIndex = bullets[i].y;
 	}
 }
 
