@@ -6,9 +6,10 @@ GENERAL UTILITY FUNCTIONS
 
 */
 
-var startTime=new Date().getTime(); timeOffset=parseInt(Math.random()*3600000);
+var startTime=new Date().getTime(); var gameStartTime=new Date().getTime(); timeOffset=parseInt(Math.random()*3600000);
 //returns precise time (avoids too-large numbers in shaders)
 function pt(){ return new Date().getTime()-startTime+timeOffset; }
+function gamet(){ return new Date().getTime()-gameStartTime; }
 
 //appends html to body
 function ap(html) { document.body.insertAdjacentHTML("beforeend",html); }
@@ -71,6 +72,7 @@ function msgBox(txt,fwd) {
 function survivegame() {
 	generateMap();
 	renderGameTiles();
+	gameStartTime=new Date().getTime();
 	createPlayer();
 }
 function campaigngame() {
@@ -224,7 +226,6 @@ function renderGameTiles() {
 			if(Math.random()<0.0005 && gp(row,col)) createGameObject(getResource("watertower"), row*tilesize, col*tilesize-20,col*tilesize);
 		}
 	}
-	for(var i=0;i<200;i++) { spawnEnemyNearEdge(); }
 }
 
 enemyCounter=0;
@@ -361,17 +362,9 @@ function playerShootBullet(clickX, clickY) {
 		document.getElementById('bullet'+bullets[0].bulletid).html = "";
 		bullets.shift();
 	}
-	bullet = new Bullet(playerX+tilesize/2, playerY+tilesize/2, bulletDX, bulletDY, bulletID);
+	bullet = {x:playerX+tilesize/2, y:playerY+tilesize/2, dx:bulletDX, dy:bulletDY, bulletid:bulletID, killtimer:pt()};
 	bullets.push(bullet);
 	createBullet(bullet);
-}
-
-function Bullet(x, y, dx, dy, bulletid) {
-	this.x = x;
-	this.y = y;
-	this.dx = dx;
-	this.dy = dy;
-	this.bulletid = bulletid;
 }
 
 bulletSize = 2;
@@ -380,7 +373,13 @@ function createBullet(bullet) {
 }
 
 function updateBullets() {
+	var timecheck=pt()-5000;
 	for(var i = 0; i < bullets.length; i++) {
+		if(bullets[i].killtimer<timecheck-5000) {
+			var elem=document.getElementById('bullet'+bullets[i].bulletid);
+			elem.parentNode.removeChild(elem);
+			bullets.splice(i, 1);
+			continue; }
 		bullets[i].x += bullets[i].dx * bulletSpeed;
 		bullets[i].y += bullets[i].dy * bulletSpeed;
 		document.getElementById('bullet'+bullets[i].bulletid).style.left = bullets[i].x+"px";
@@ -399,9 +398,9 @@ setInterval(function() {
 	else if(playerDX==1) document.getElementById("playerAvatar").style.backgroundImage="url(graphics/playermr.gif)";
 	else if(playerDY==-1) document.getElementById("playerAvatar").style.backgroundImage="url(graphics/playermu.gif)";
 	else document.getElementById("playerAvatar").style.backgroundImage="url(graphics/playermd.gif)";
-	
 	updateBullets();
 	updateEnemies();
+	if(Math.random()<0.001+gamet()/10000000) spawnEnemyNearEdge();
 },15);
 doAnimations=function() {
 	document.getElementById('playerAvatar').style.left = playerX+"px";
