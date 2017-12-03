@@ -1,20 +1,25 @@
 TEAM 7 SINFUL SAINTS
 
-Project Lead
+PROJECT LEAD
+------------
 Lars Dobbertin-King
 
-Design
+DESIGN
+------
 NemoGG
 Sour
 
-Art
+ART
+---
 Sybatron
 
-Programming
+PROGRAMMING
+-----------
 Sour
 AcNuker
 
-Sound
+SOUND/MUSIC
+-----------
 Cloudjumper
 Auvenil
 

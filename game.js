@@ -74,6 +74,7 @@ function survivegame() {
 	renderGameTiles();
 	gameStartTime=new Date().getTime();
 	createPlayer();
+	createHealthbar();
 }
 function campaigngame() {
 	msgBox("This game mode is not yet available.","mainMenu()");
@@ -297,6 +298,7 @@ function spawnEnemyNearEdge() {
 		closeEnoughToPlayer: false,
 		nextPathingUpdate: -9999999999,
 		x:x, y:y, speed: playerSpeed*(Math.random()*0.5+0.4),
+		health: 5,
 		path:[]
 	});
 	document.getElementById("gameinner2").insertAdjacentHTML('beforeend', "<div class='enemy' id='enemy"+enemyCounter+"' style='left: "+x+"px; top: "+y+"px; z-index: "+y+"; position: absolute; width: 20px; height: 20px; background-color: transparent; background-size: contain; background-image: url(50px/walker_walkingD.gif);'></div>");
@@ -313,12 +315,34 @@ function updateEnemyPath(e) {
 		if(e.path.length>=1) e.path.shift();
 		else console.log(e);
 	}
-	return e; }
+	return e; 
+}
+	
+function distance(x1, y1, x2, y2) {
+	return Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+}
+
+enemyAttackRange = 20;
+enemyDamage = 1;
+// the last time the player was attacked
+playerLastAttacked = 0;
+// the amount of time the player is invulnerable for after being hit, in milliseconds
+playerInvulnTime = 1000;
 function updateEnemies() {
 	var tickTime=pt();
 	for(var i = 0; i < activeEnemies.length; i++) {
 		var e=activeEnemies[i];
-		//attacking logic goes here
+		
+		//attack logic is here
+		distToPlayer = distance(playerX, playerY, e.x + 10, e.y + 10);
+		time = (new Date()).getTime()
+		if(distToPlayer <= enemyAttackRange && time - playerLastAttacked > playerInvulnTime) {
+			//todo: play enemy attack animation
+			//todo: play player hurt animation
+			playerHealth -= enemyDamage;
+			playerLastAttacked = time;
+		}
+		
 		if(e.nextPathingUpdate<=tickTime) { e=updateEnemyPath(e); e.nextPathingUpdate=tickTime+1500; activeEnemies[i]=e; }
 		if(e.closeEnoughToPlayer) continue;
 		if(e.path.length===0) continue;
@@ -341,12 +365,18 @@ function createGameObject(img,x,y,z) {
 	document.getElementById("gameinner2").insertAdjacentHTML('afterbegin', "<div class='gaiaObj' style='left: "+x+"px; top: "+y+"px; z-index: "+z+"; position: absolute;'><img src=\""+img.src+"\"></div>"); }
 
 var mappadding=2500;
-var playerX=0,playerY=0,playerDX=0,playerDY=0,playerSpeed=2;
+var playerX=0,playerY=0,playerDX=0,playerDY=0,playerSpeed=2, playerMaxHealth = 10, playerHealth = playerMaxHealth;
 function createPlayer() {
 	playerX=Math.round(mapsize/2)*tilesize+mappadding; playerY=Math.round(mapsize/2)*tilesize+mappadding;
 	if(!canMove(playerX,playerY)) { while(!canMove(playerX,playerY)) { playerX+=tilesize; } }
 	document.getElementById("gameinner2").insertAdjacentHTML('afterbegin', "<div id='playerAvatar' style='left: "+playerX+"px; top: "+playerY+"px; background-color: transparent; background-image: url(graphics/playermd.gif); background-size: contain; width: "+tilesize+"px; height: "+tilesize+"px; position: absolute;'></div>");
 	hidemenus(); isGameActive=true; requestAnimationFrame(doAnimations);
+}
+
+function createHealthbar() {
+	document.getElementById("game").insertAdjacentHTML('afterbegin', "<div id='healthbar' style='left: 4px; top: 4px; background-color: #00FF00; background-size: contain; width: "+((playerHealth/playerMaxHealth)*100)+"px; height: 8px; position: absolute;'></div>");
+	document.getElementById("game").insertAdjacentHTML('afterbegin', "<div id='healthbarBackground' style='left: 4px; top: 4px; background-color: #FF0000; background-size: contain; width: 100px; height: 8px; position: absolute;'></div>");
+	document.getElementById("game").insertAdjacentHTML('afterbegin', "<p id='healthbarText' style='left: 4px; top: 4px; background-color: transparent; background-size: contain; width: 100px; height: 8px; position: absolute;'>Health: "+playerHealth+"/"+playerMaxHealth+"</p>");
 }
 
 function canMove(x,y) {
@@ -404,20 +434,53 @@ function createBullet(bullet) {
 	document.getElementById("gameinner2").insertAdjacentHTML('afterbegin', "<div id='bullet"+bullet.bulletid+"' style='left: "+bullet.x+"px; top: "+bullet.y+"px; background-color: #000000; background-size: contain; width: "+bulletSize+"px; height: "+bulletSize+"px; position: absolute;'></div>");
 }
 
+function destroyBullet(i) {
+	var elem=document.getElementById('bullet'+bullets[i].bulletid);
+	elem.parentNode.removeChild(elem);
+	bullets.splice(i, 1);
+}
+
+function killEnemy(en) {
+	var elem = document.getElementById(activeEnemies[en].id);
+	elem.parentNode.removeChild(elem);
+	activeEnemies.splice(en, 1);
+}
+
 function updateBullets() {
 	var timecheck=pt()-5000;
 	for(var i = 0; i < bullets.length; i++) {
 		if(bullets[i].killtimer<timecheck-5000) {
-			var elem=document.getElementById('bullet'+bullets[i].bulletid);
-			elem.parentNode.removeChild(elem);
-			bullets.splice(i, 1);
-			continue; }
+			destroyBullet(i);
+			continue; 
+		}
 		bullets[i].x += bullets[i].dx * bulletSpeed;
 		bullets[i].y += bullets[i].dy * bulletSpeed;
 		document.getElementById('bullet'+bullets[i].bulletid).style.left = bullets[i].x+"px";
 		document.getElementById('bullet'+bullets[i].bulletid).style.top = bullets[i].y+"px";
 		document.getElementById('bullet'+bullets[i].bulletid).style.zIndex = bullets[i].y;
+		
+		for(var en = 0; en < activeEnemies.length; en++) {
+			var e = activeEnemies[en];
+			if(bullets[i].x > e.x && bullets[i].x < e.x + 20 && bullets[i].y > e.y && bullets[i].y < e.y + 20) {
+				e.health -= 1;
+				//todo play enemy hurt animation
+				if(e.health <= 0) {
+					killEnemy(en);
+				}
+				destroyBullet(i);
+				continue;
+			}
+		}
 	}
+}
+
+function updateHealthbar() {
+	document.getElementById('healthbar').style.width = (playerHealth/playerMaxHealth)*100+"px";
+	document.getElementById('healthbarText').innerHTML = "Health: "+playerHealth+"/"+playerMaxHealth;
+}
+
+function loseGame() {
+	//todo
 }
 
 setInterval(function() {
@@ -432,6 +495,8 @@ setInterval(function() {
 	else document.getElementById("playerAvatar").style.backgroundImage="url(graphics/playermd.gif)";
 	updateBullets();
 	updateEnemies();
+	updateHealthbar();
+	if(playerHealth <= 0) loseGame();
 	if(Math.random()<0.001+gamet()/10000000) spawnEnemyNearEdge();
 },15);
 
