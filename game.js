@@ -124,6 +124,7 @@ function startsurvivegame() {
 	gameStartTime=new Date().getTime();
 	createPlayer();
 	getResource("sfxStart").play();
+	playGameMusic();
 }
 function campaigngame() {
 	getResource('sfxSelect').play();
@@ -141,7 +142,7 @@ function options() {
 	document.getElementById("sfxslider").value=optSfx;
 }
 function setSfxVol(x) {
-	optSfx=x; console.log(optSfx);
+	optSfx=x;
 	for (var i = 0; i < registeredResources.length; i++) {
 		if(registeredResources[i].name.substring(0, 3)=="sfx") registeredResources[i].res.volume(optSfx);
 	}
@@ -223,10 +224,13 @@ function loadGame() {
 			if(assetsLoaded==assetstotal) startTheGame();
 			if(a=="howler.js") {
 				var pushsound=function(name,path) { var to=new Howl({src:[path],onload:function() { addResource(name,to); assetCheck(); }.bind(this)}); };
+				var pushmusic=function(name,path) { var to=new Howl({src:[path],onload:function() { addResource(name,to); }.bind(this), html5:true, loop:true}); };
 				pushsound("sfxGun","sounds/Gun.mp3");
 				pushsound("sfxStart","sounds/Start.mp3");
 				pushsound("sfxSelect","sounds/Select.mp3");
 				pushsound("sfxBack","sounds/Back.mp3");
+				
+				pushmusic("musicIngame1","music/main-loop-sketch_1.0.mp3");
 			}
 		} }.bind(this));
 	loadjscssfile("pathing.js","js");
@@ -250,6 +254,18 @@ mapstyle="colosseum";
 isGameActive=false;
 pathfinder=false;
 aStar={};
+
+musicPlaying=null;
+
+function playGameMusic() {
+	if(musicPlaying!==null) stopMusic();
+	musicPlaying=getResource("musicIngame1").play();
+}
+function stopMusic() {
+	for (var i = 0; i < registeredResources.length; i++) {
+		if(registeredResources[i].name.substring(0, 5)=="music" && registeredResources[i].res.playing()) registeredResources[i].res.stop();
+	}
+}
 
 function generateMap() {
 	pathfinder=new PF.Grid(mapsize, mapsize); var tempcanvas,tempctx;
@@ -313,7 +329,7 @@ function generateMap() {
 		}
 	}
 	if(mapstyle=="chase") {
-		maxnumit=mapsize/20;
+		maxnumit=mapsize/10;
 		for(i=0;i<maxnumit;i++) {
 			reset(); gamemap[cpos]=0;
 			while(true) {
@@ -356,7 +372,6 @@ function renderGameTiles() {
 			else if(gp(row,col) && gp(row,col-1)) context.drawImage(getResource("img12"), row*tilesize, col*tilesize);
 			else if(gp(row,col)) context.drawImage(getResource("img15"), row*tilesize, col*tilesize);
 			else context.fillRect(row*tilesize, col*tilesize, tilesize, tilesize);
-		//	context.drawImage(getResource("sand"), row*tilesize, col*tilesize);
 			if(Math.random()<0.008 && gp(row,col)) createGameObject(getResource("cactus"), row*tilesize, col*tilesize);
 			if(Math.random()<0.004 && gp(row,col)) createGameObject(getResource("cactus2"), row*tilesize, col*tilesize);
 			if(Math.random()<0.003 && gp(row,col)) context.drawImage(getResource("rocks"), row*tilesize, col*tilesize);
@@ -614,7 +629,7 @@ function updateHealthbar() {
 }
 
 function loseGame() {
-	isGameActive=false;
+	isGameActive=false; stopMusic();
 	for(var i = 0; i < bullets.length; i++) destroyBullet(i);
 	for(i = 0; i < activeEnemies.length; i++) killEnemy(i);
 	activeEnemies=[]; bullets=[];
