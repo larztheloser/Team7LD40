@@ -133,9 +133,19 @@ function multgame() {
 	getResource('sfxSelect').play();
 	msgBox("This game mode is not yet available.","mainMenu()");
 }
+optInput='arrow'; optSfx=1.0;
 function options() {
 	getResource('sfxSelect').play();
-	msgBox("The options are not yet available.","mainMenu()");
+	document.getElementById("menus").innerHTML="<div class='menublock'><span class='menutitle'>Options</span><table><tr><td style='width: 100px;'><label for='optinput'>Movement:</label></td><td><select id='optinput' onchange='optInput=this.value;'><option value='arrow'>Arrow Keys</option><option value='wasd'>WASD Keys</option></select></td></tr><tr><td style='width: 100px;'><label for='sfxslider'>SFX Volume:</label></td><td><input id=\"sfxslider\" onchange=\"setSfxVol(this.value)\" type=\"range\" min=\"0.0\" max=\"1.0\" step =\"0.05\" value=\"1.0\"></td></tr></table><a href='javascript: void(0)' onclick=\"getResource('sfxBack').play();mainMenu()\">Back</a></div>";
+	document.getElementById("optinput").value=optInput;
+	document.getElementById("sfxslider").value=optSfx;
+}
+function setSfxVol(x) {
+	optSfx=x; console.log(optSfx);
+	for (var i = 0; i < registeredResources.length; i++) {
+		if(registeredResources[i].name.substring(0, 3)=="sfx") registeredResources[i].res.volume(optSfx);
+	}
+	getResource("sfxGun").play();
 }
 function credits() {
 	getResource('sfxSelect').play();
@@ -483,9 +493,9 @@ function createHealthbar() {
 
 function canMove(x,y) {
 	x-=mappadding; y-=mappadding;
-	x2=Math.floor((x+15)/tilesize); y2=Math.floor((y+22)/tilesize);
-	x=Math.floor(x/tilesize); y=Math.floor((y+5)/tilesize);
-	return gamemap[x*mapsize+y]==1&&gamemap[x2*mapsize+y2]==1;
+	x2=Math.floor((x+10)/tilesize); y2=Math.floor((y+12)/tilesize);
+	x=Math.floor((x+3)/tilesize); y=Math.floor((y+5)/tilesize);
+	return gamemap[x*mapsize+y]==1&&gamemap[x2*mapsize+y2]==1&&gamemap[x2*mapsize+y]==1&&gamemap[x*mapsize+y2]==1;
 }
 
 document.onmousedown = checkMouseDown;
@@ -494,17 +504,31 @@ document.onkeyup = checkKeyUp;
 function checkKeyDown(e) {
 	if(!isGameActive) return;
 	e = e || window.event;
-	if (e.keyCode == '38' || e.keyCode == '87') playerDY=-1;
-	else if (e.keyCode == '40' || e.keyCode == '83') playerDY=1;
-	else if (e.keyCode == '37' || e.keyCode == '65') playerDX=-1;
-	else if (e.keyCode == '39' || e.keyCode == '68') playerDX=1;
+	if(optInput=="arrow") {
+		if (e.keyCode == '38') playerDY=-1;
+		else if (e.keyCode == '40') playerDY=1;
+		else if (e.keyCode == '37') playerDX=-1;
+		else if (e.keyCode == '39') playerDX=1;
+	}
+	if(optInput=="wasd") {
+		if (e.keyCode == '87') playerDY=-1;
+		else if (e.keyCode == '83') playerDY=1;
+		else if (e.keyCode == '65') playerDX=-1;
+		else if (e.keyCode == '68') playerDX=1;
+	}
 }
 
 function checkKeyUp(e) {
 	if(!isGameActive) return;
 	e = e || window.event;
-	if(e.keyCode == '38' || e.keyCode == '40' || e.keyCode == '87' || e.keyCode == '83') playerDY = 0;
-	else if(e.keyCode == '37' || e.keyCode == '39' || e.keyCode == '65' || e.keyCode == '68') playerDX = 0;
+	if(optInput=="arrow") {
+		if(e.keyCode == '38' || e.keyCode == '40') playerDY = 0;
+		else if(e.keyCode == '37' || e.keyCode == '39') playerDX = 0;
+	}
+	if(optInput=="wasd") {
+		if(e.keyCode == '87' || e.keyCode == '83') playerDY = 0;
+		else if(e.keyCode == '68' || e.keyCode == '65') playerDX = 0;
+	}
 }
 
 function checkMouseDown(e) {
@@ -549,13 +573,18 @@ function killEnemy(en) {
 	activeEnemies.splice(en, 1);
 }
 
+function canBulletPass(x,y) {
+	x-=mappadding; y-=mappadding;
+	x=Math.floor(x/tilesize); y=Math.floor(y/tilesize);
+	return gamemap[x*mapsize+y]==1;
+}
+
 function updateBullets() {
 	var timecheck=pt()-5000;
 	for(var i = 0; i < bullets.length; i++) {
-		if(bullets[i].killtimer<timecheck-5000) {
+		if(bullets[i].killtimer<timecheck-5000 || !canBulletPass(bullets[i].x,bullets[i].y)) {
 			destroyBullet(i);
-			continue; 
-		}
+			continue; }
 		bullets[i].x += bullets[i].dx * bulletSpeed;
 		bullets[i].y += bullets[i].dy * bulletSpeed;
 		for(var en = 0; en < activeEnemies.length; en++) {
@@ -605,7 +634,7 @@ setInterval(function() {
 	updateBullets();
 	updateEnemies();
 	updateHealthbar();
-	if(Math.random()<0.001+gamet()/10000000) spawnEnemyNearEdge();
+	if(Math.random()<0.0025+gamet()/13000000) spawnEnemyNearEdge();
 	if(mapstyle=="pyramid" && Math.random()<0.001+gamet()/10000000) spawnEnemyNearEdge();
 	if(playerHealth <= 0) loseGame();
 },15);
