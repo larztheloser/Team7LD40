@@ -86,10 +86,10 @@ function updatesurvivegamemenu(a) {
 	prevSurviveMapTypeSelection=elem.value;
 	var elem2=document.getElementById("mcsmapname");
 	if(elem.value=="r") {
-		elem2.innerHTML="<option value='arena'>Arena</option><option value='valleys'>Valleys</option>";
+		elem2.innerHTML="<option value='arena'>Arena</option><option value='chase'>The Chase</option><option value='valleys'>Valleys</option>";
 		document.getElementById("mcshfscn").style.display="table-row";
 	} else {
-		elem2.innerHTML="<option value='colosseum'>Colosseum</option><option value='snake valley'>Snake Valley</option><option value='two worlds'>Two Worlds</option>";
+		elem2.innerHTML="<option value='colosseum'>Colosseum</option><option value='grand canyon'>Grand Canyon</option><option value='pyramid'>Pyramid</option><option value='snake valley'>Snake Valley</option><option value='two worlds'>Two Worlds</option>";
 		document.getElementById("mcshfscn").style.display="none";
 	}
 	if(!a) updatesurvivemapname();
@@ -99,8 +99,11 @@ function updatesurvivemapname() { prevSurviveMapSelection=document.getElementByI
 function updateMapDesc() {
 	var desc="",map=document.getElementById("mcsmapname").value;
 	if(map=='arena') desc="Large open area in the middle with numerous canyons towards the edges of the map.";
+	if(map=='chase') desc="A rough, usually circular gorge.";
 	if(map=='valleys') desc="Open mesas and plains with a few secluded spaces.";
 	if(map=='colosseum') desc="Small map - fight in the classical dungeon of gladiators!";
+	if(map=='pyramid') desc="Small map - watch your enemies run towards you in circles like Lemmings :)";
+	if(map=='grand canyon') desc="Based on the real-world geography of the world-famous landmark.";
 	if(map=='snake valley') desc="Maze-like canyons can make these valleys deceptive and hard to navigate.";
 	if(map=='two worlds') desc="Small map - enemies will come at you from both left and right on this map.";
 	document.getElementById("mapdesc").innerHTML=desc;
@@ -142,10 +145,9 @@ onload=function() {
 };
 
 function loadGame() {
-	var assetsLoaded=0, assetstotal=33;
+	var assetsLoaded=0, assetstotal=34; // remember to update the number of assets to load when changing this function
 	var assetCheck=function() { assetsLoaded++; if(assetsLoaded==assetstotal) mainMenu(); }.bind(this);
 	var pushasset=function(name,path) { var to=new Image(); to.onload=function() { addResource(name,to); assetCheck(); }.bind(this); to.src=path; };
-
 	pushasset("player","graphics/playermd.gif");
 	pushasset("playermr","graphics/playermr.gif");
 	pushasset("playerml","graphics/playerml.gif");
@@ -178,6 +180,8 @@ function loadGame() {
 	pushasset("svmap","maps/snakevalley.gif");
 	pushasset("comap","maps/colosseum.gif");
 	pushasset("twmap","maps/twoworlds.gif");
+	pushasset("pymap","maps/pyramid.gif");
+	pushasset("gcmap","maps/grandcanyon.gif");
 	on("scriptload",function(a) { if(a=="pathing.js") { assetsLoaded++; aStar=new PF.AStarFinder(); if(assetsLoaded==assetstotal) mainMenu(); } }.bind(this));
 	loadjscssfile("pathing.js","js");
 }
@@ -202,11 +206,13 @@ aStar={};
 
 function generateMap() {
 	pathfinder=new PF.Grid(mapsize, mapsize); var tempcanvas,tempctx;
-	if(mapstyle=="snake valley" || mapstyle=="colosseum" || mapstyle=="two worlds") {
+	if(mapstyle=="snake valley" || mapstyle=="colosseum" || mapstyle=="two worlds" || mapstyle=="grand canyon" || mapstyle=="pyramid") {
 		var scenario;
 		if(mapstyle=="snake valley") scenario=getResource("svmap");
 		if(mapstyle=="colosseum") scenario=getResource("comap");
 		if(mapstyle=="two worlds") scenario=getResource("twmap");
+		if(mapstyle=="pyramid") scenario=getResource("pymap");
+		if(mapstyle=="grand canyon") scenario=getResource("gcmap");
 		tempcanvas = document.createElement('canvas');
 		tempcanvas.width = scenario.width;
 		tempcanvas.height = scenario.height;
@@ -216,7 +222,7 @@ function generateMap() {
 	}
 	for(var row=0;row<mapsize;row++) {
 		for(var col=0;col<mapsize;col++) {
-			if(mapstyle=="snake valley" || mapstyle=="colosseum" || mapstyle=="two worlds") {
+			if(mapstyle=="snake valley" || mapstyle=="colosseum" || mapstyle=="two worlds" || mapstyle=="grand canyon" || mapstyle=="pyramid") {
 				if(tempctx.getImageData(row, col, 1, 1).data[0]>0) {
 					gamemap[row*mapsize+col]=1;
 					pathfinder.setWalkableAt(row, col, true);
@@ -230,7 +236,7 @@ function generateMap() {
 			pathfinder.setWalkableAt(row, col, false);
 		}
 	}
-	if(mapstyle=="snake valley" || mapstyle=="colosseum" || mapstyle=="two worlds") return;
+	if(mapstyle=="snake valley" || mapstyle=="colosseum" || mapstyle=="two worlds" || mapstyle=="grand canyon" || mapstyle=="pyramid") return;
 	var halfmapsize=Math.round(mapsize/2);
 	var cpos;
 	function getX() { return cpos%mapsize; }
@@ -239,16 +245,12 @@ function generateMap() {
 	function goDown() { if(getY()!==mapsize-1) cpos+=mapsize; }
 	function goLeft() { if(getX()!==1) cpos-=1; }
 	function goRight() { if(getX()!==mapsize-1) cpos+=1; }
-	
-	
-	//svmap
-	
 	function reset() {
-		if(mapstyle=="arena") cpos=halfmapsize*mapsize+halfmapsize;
+		if(mapstyle=="arena" || mapstyle=="chase") cpos=halfmapsize*mapsize+halfmapsize;
 		if(mapstyle=="valleys") cpos=Math.floor(Math.random()*mapsize*mapsize);
 	}
 	var maxnumit=mapsize*5;
-	if(mapstyle=="arena") maxnumit=mapsize*8;
+	if(mapstyle=="arena" || mapstyle=="chase") maxnumit=mapsize*8;
 	for(var i=0;i<maxnumit;i++) {
 		reset(); gamemap[cpos]=1;
 		while(true) {
@@ -261,6 +263,23 @@ function generateMap() {
 			gamemap[cpos]=1;
 			pathfinder.setWalkableAt(getY(), getX(), true);
 			if(Math.random()<0.005) break;
+		}
+	}
+	if(mapstyle=="chase") {
+		maxnumit=mapsize/20;
+		for(i=0;i<maxnumit;i++) {
+			reset(); gamemap[cpos]=0;
+			while(true) {
+				switch(Math.floor(Math.random()*4)+1) {
+					case 1: goUp(); break;
+					case 2: goDown(); break;
+					case 3: goLeft(); break;
+					case 4: goRight(); break;
+				}
+				gamemap[cpos]=0;
+				pathfinder.setWalkableAt(getY(), getX(), false);
+				if(Math.random()<0.005) break;
+			}
 		}
 	}
 }
@@ -307,30 +326,34 @@ function renderGameTiles() {
 enemyCounter=0;
 activeEnemies=[];
 function spawnEnemyNearEdge() {
-	var x,y;
+	var x,y,maxcount=0;
 	switch(Math.floor(Math.random()*4)+1) {
 		case 1:
 			y=mappadding; x=mappadding+parseInt(Math.random()*mapsize)*tilesize;
-			while(!canMove(x,y)) {
+			while(!canMove(x+6,y+9)) {
 				y+=tilesize;
+				if(mapstyle=="pyramid" || mapstyle=="grand canyon") { maxcount++; if(maxcount>3) return; }
 				if(y>=mappadding+tilesize*mapsize) return; }
 			break;
 		case 2:
 			x=mappadding; y=mappadding+parseInt(Math.random()*mapsize)*tilesize;
-			while(!canMove(x,y)) {
+			while(!canMove(x+6,y+9)) {
 				x+=tilesize;
+				if(mapstyle=="pyramid" || mapstyle=="grand canyon") { maxcount++; if(maxcount>3) return; }
 				if(x>=mappadding+tilesize*mapsize) return; }
 			break;
 		case 3:
 			y=mappadding+mapsize*tilesize; x=mappadding+parseInt(Math.random()*mapsize)*tilesize;
-			while(!canMove(x,y)) {
+			while(!canMove(x+6,y+9)) {
 				y-=tilesize;
+				if(mapstyle=="pyramid" || mapstyle=="grand canyon") { maxcount++; if(maxcount>3) return; }
 				if(y<=mappadding) return; }
 			break;
 		default:
 			x=mappadding+mapsize*tilesize; y=mappadding+parseInt(Math.random()*mapsize)*tilesize;
-			while(!canMove(x,y)) {
+			while(!canMove(x+6,y+9)) {
 				x-=tilesize;
+				if(mapstyle=="pyramid" || mapstyle=="grand canyon") { maxcount++; if(maxcount>3) return; }
 				if(x<=mappadding) return; }
 			break;
 	}
@@ -475,14 +498,15 @@ setInterval(function() {
 	updateBullets();
 	updateEnemies();
 	if(Math.random()<0.001+gamet()/10000000) spawnEnemyNearEdge();
+	if(mapstyle=="pyramid" && Math.random()<0.001+gamet()/10000000) spawnEnemyNearEdge();
 },15);
 
 doAnimations=function() {
 	document.getElementById('playerAvatar').style.left = playerX+"px";
 	document.getElementById('playerAvatar').style.top = playerY+"px";
 	document.getElementById('playerAvatar').style.zIndex = playerY;
-	document.getElementById('gameinner').scrollLeft = (playerX-392)*2.6-mappadding*1.34; //150 - 392
-	document.getElementById('gameinner').scrollTop = (playerY-6*mapsize-100)*2.6-mappadding*1.62; //150 - 1012
+	document.getElementById('gameinner').scrollLeft = (playerX-392)*2.6-mappadding*1.34;
+	document.getElementById('gameinner').scrollTop = (playerY-6*mapsize-100)*2.6-mappadding*1.62;
 	requestAnimationFrame(doAnimations);
 };
 
