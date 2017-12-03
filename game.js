@@ -68,7 +68,7 @@ function mainMenu() {
 }
 function msgBox(txt,fwd) {
 	showmenus();
-	document.getElementById("menus").innerHTML="<div class='msgblock'>"+txt+"<br><a href='javascript: void(0)' onclick=\""+fwd+"\" class='msgclink'>Continue</a></div>";
+	document.getElementById("menus").innerHTML="<div class='msgblock'>"+txt+"<br><a href='javascript: void(0)' onclick=\"getResource('sfxSelect').play();"+fwd+"\" class='msgclink'>Continue</a></div>";
 }
 prevSurviveMapTypeSelection="r";
 prevSurviveMapSelection="arena";
@@ -78,7 +78,8 @@ function postSurvivalGame() {
 	mainMenu();
 }
 function survivegame() {
-	document.getElementById("menus").innerHTML="<div class='menublock'><span class='menutitle'>Setup Game</span><table><tr><td style='width: 100px;'><label for='mcsgametype'>Game Type:</label></td><td><select onchange='updatesurvivegamemenu(false)' id='mcsgametype'><option value='r' selected>Random Map</option><option value='s'>Scenario</option></select></td></tr><tr><td><label for='mcsmapname'>Map Name:</label></td><td><select id='mcsmapname' onchange='updatesurvivemapname()'></select></td></tr><tr><td colspan=2 id='mapdesc' style='font-size: 11px; height: 30px;'></td></tr><tr id='mcshfscn'><td><label for='mcsmapsize'>Map Size:</label></td><td><select id='mcsmapsize' onchange='updatesurvivemapsize()'><option value='45'>Small</option><option value='100'>Medium</option><option value='150'>Large</option></select></td></tr></table><a href='javascript: void(0)' onclick='mainMenu()'>Back</a><a href='javascript: void(0)' onclick='startsurvivegame()'>PLAY</a></div>";
+	getResource('sfxSelect').play();
+	document.getElementById("menus").innerHTML="<div class='menublock'><span class='menutitle'>Setup Game</span><table><tr><td style='width: 100px;'><label for='mcsgametype'>Game Type:</label></td><td><select onchange='updatesurvivegamemenu(false)' id='mcsgametype'><option value='r' selected>Random Map</option><option value='s'>Scenario</option></select></td></tr><tr><td><label for='mcsmapname'>Map Name:</label></td><td><select id='mcsmapname' onchange='updatesurvivemapname()'></select></td></tr><tr><td colspan=2 id='mapdesc' style='font-size: 11px; height: 30px;'></td></tr><tr id='mcshfscn'><td><label for='mcsmapsize'>Map Size:</label></td><td><select id='mcsmapsize' onchange='updatesurvivemapsize()'><option value='45'>Small</option><option value='100'>Medium</option><option value='150'>Large</option></select></td></tr></table><a href='javascript: void(0)' onclick=\"getResource('sfxBack').play();mainMenu()\">Back</a><a href='javascript: void(0)' onclick='startsurvivegame()'>PLAY</a></div>";
 	document.getElementById("mcsgametype").value=prevSurviveMapTypeSelection;
 	updatesurvivegamemenu(true);
 	document.getElementById("mcsmapname").value=prevSurviveMapSelection;
@@ -114,9 +115,6 @@ function updateMapDesc() {
 	document.getElementById("mapdesc").innerHTML=desc;
 }
 
-
-
-
 function startsurvivegame() {
 	mapstyle=document.getElementById("mcsmapname").value;
 	mapsize=parseInt(document.getElementById("mcsmapsize").value);
@@ -125,17 +123,22 @@ function startsurvivegame() {
 	createHealthbar();
 	gameStartTime=new Date().getTime();
 	createPlayer();
+	getResource("sfxStart").play();
 }
 function campaigngame() {
+	getResource('sfxSelect').play();
 	msgBox("This game mode is not yet available.","mainMenu()");
 }
 function multgame() {
+	getResource('sfxSelect').play();
 	msgBox("This game mode is not yet available.","mainMenu()");
 }
 function options() {
+	getResource('sfxSelect').play();
 	msgBox("The options are not yet available.","mainMenu()");
 }
 function credits() {
+	getResource('sfxSelect').play();
 	msgBox("The credits are not yet available.","mainMenu()");
 }
 function hidemenus() {
@@ -155,8 +158,14 @@ onload=function() {
 };
 
 function loadGame() {
-	var assetsLoaded=0, assetstotal=34; // remember to update the number of assets to load when changing this function
-	var assetCheck=function() { assetsLoaded++; if(assetsLoaded==assetstotal) mainMenu(); }.bind(this);
+	var assetsLoaded=0, assetstotal=45; // remember to update the number of assets to load when changing this function
+	document.getElementById("menus").innerHTML="<div class='msgblock'><div class='menutitle' style='color: #000;'>Loading</div><div id='loadbar' style='display: inline-block; width: 300px; height: 9px; border: 1px solid white; overflow: hidden'><div id='loadbarinner' style='width: 0; height: 9px; background-color: #fff;'></div></div></div>";
+	function startTheGame() { mainMenu(); }
+	var assetCheck=function() {
+		assetsLoaded++;
+		document.getElementById('loadbarinner').style.width=100/assetstotal*assetsLoaded+"%";
+		if(assetsLoaded==assetstotal) startTheGame();
+	}.bind(this);
 	var pushasset=function(name,path) { var to=new Image(); to.onload=function() { addResource(name,to); assetCheck(); }.bind(this); to.src=path; };
 	pushasset("player","graphics/playermd.gif");
 	pushasset("playermr","graphics/playermr.gif");
@@ -182,6 +191,11 @@ function loadGame() {
 	pushasset("cactus2","graphics/cactus2.gif");
 	pushasset("cactus3","50px/cactus.gif");
 	pushasset("cactus4","50px/grass.gif");
+	pushasset("walkerD","50px/edead.png");
+	pushasset("walkerWD","50px/walker_walkingD.gif");
+	pushasset("walkerWF","50px/walker_walkingF.gif");
+	pushasset("walkerWL","50px/walker_walkingL.gif");
+	pushasset("walkerWR","50px/walker_walkingR.gif");
 	pushasset("rocks","graphics/rocks.gif");
 	pushasset("grave","graphics/grave.gif");
 	pushasset("windmill","graphics/windmill.gif");
@@ -192,8 +206,21 @@ function loadGame() {
 	pushasset("twmap","maps/twoworlds.gif");
 	pushasset("pymap","maps/pyramid.gif");
 	pushasset("gcmap","maps/grandcanyon.gif");
-	on("scriptload",function(a) { if(a=="pathing.js") { assetsLoaded++; aStar=new PF.AStarFinder(); if(assetsLoaded==assetstotal) mainMenu(); } }.bind(this));
+	on("scriptload",function(a) {
+		if(a=="pathing.js"||a=="howler.js") {
+			assetsLoaded++;
+			if(a=="pathing.js") aStar=new PF.AStarFinder();
+			if(assetsLoaded==assetstotal) startTheGame();
+			if(a=="howler.js") {
+				var pushsound=function(name,path) { var to=new Howl({src:[path],onload:function() { addResource(name,to); assetCheck(); }.bind(this)}); };
+				pushsound("sfxGun","sounds/Gun.mp3");
+				pushsound("sfxStart","sounds/Start.mp3");
+				pushsound("sfxSelect","sounds/Select.mp3");
+				pushsound("sfxBack","sounds/Back.mp3");
+			}
+		} }.bind(this));
 	loadjscssfile("pathing.js","js");
+	loadjscssfile("howler.js","js");
 }
 
 /*
@@ -204,7 +231,7 @@ GAME
 
 var bulletSpeed = 5;
 var bullets = [];
-var maxBullets = 25;
+var maxBullets = 50;
 
 gamemap=[];
 mapsize=150;
@@ -294,7 +321,7 @@ function generateMap() {
 	}
 }
 function renderGameTiles() {
-	document.getElementById("game").innerHTML="<div id='gameinner'><div id='gameinner2'></div></div>";
+	document.getElementById("game").innerHTML="<div id='gameinner'><div id='gameinner2'></div></div><div id='gameinner3'></div>";
 	document.getElementById("gameinner2").innerHTML="<canvas id='drawcanvas' width=\""+(mapsize*tilesize)+"\" height=\""+(mapsize*tilesize)+"\">";
 	var context = document.getElementById('drawcanvas').getContext("2d");
 	function gp(r,c) { return gamemap[r*mapsize+c]==1; }
@@ -332,7 +359,6 @@ function renderGameTiles() {
 		}
 	}
 }
-
 enemyCounter=0;
 activeEnemies=[];
 function spawnEnemyNearEdge() {
@@ -427,10 +453,23 @@ function createGameObject(img,x,y,z) {
 	else z+=mappadding;
 	document.getElementById("gameinner2").insertAdjacentHTML('afterbegin', "<div class='gaiaObj' style='left: "+x+"px; top: "+y+"px; z-index: "+z+"; position: absolute;'><img src=\""+img.src+"\"></div>"); }
 
+deadEnemyCounter=0;
+function spawnDeadEnemy(x,y) {
+	var deadEnemyNum=deadEnemyCounter; var cPos=0;
+	document.getElementById("gameinner2").insertAdjacentHTML('beforeend', "<div id='deadEnemy"+deadEnemyNum+"' style='left: "+x+"px; top: "+y+"px; z-index: "+y+"; width: "+tilesize+"px; height: "+tilesize+"px; position: absolute; background-image: url(50px/edead.png); background-size: 20px 476px; background-color: transparent; background-position: 0 0; background-repeat: no-repeat;'></div>");
+	var doDeathAnimation=setInterval(function(){
+		var elem=document.getElementById("deadEnemy"+deadEnemyNum); if(elem===null) return;
+		cPos++; if(cPos>19) return;
+		elem.style.backgroundPosition="0 -"+cPos*24+"px";
+	}.bind(this),75);
+	setTimeout(function() { clearInterval(doDeathAnimation); var elem=document.getElementById("deadEnemy"+deadEnemyNum); if(elem!==null) elem.parentNode.removeChild(elem); }.bind(this),2500);
+	deadEnemyCounter++;
+}
+
 var mappadding=2500;
-var playerX=0,playerY=0,playerDX=0,playerDY=0,playerSpeed=2, playerMaxHealth = 15, playerHealth = playerMaxHealth;
+var playerX=0,playerY=0,playerDX=0,playerDY=0,playerSpeed=2, playerMaxHealth = 15, playerHealth = playerMaxHealth, gamescore=0;
 function createPlayer() {
-	playerX=Math.floor(mapsize/2)*tilesize+mappadding; playerY=Math.floor(mapsize/2)*tilesize+mappadding;
+	playerX=Math.floor(mapsize/2)*tilesize+mappadding; playerY=Math.floor(mapsize/2)*tilesize+mappadding; gamescore=0;
 	if(!canMove(playerX,playerY)) { while(!canMove(playerX,playerY)) { playerX+=tilesize; } }
 	document.getElementById("gameinner2").insertAdjacentHTML('afterbegin', "<div id='playerAvatar' style='left: "+playerX+"px; top: "+playerY+"px; background-color: transparent; background-image: url(graphics/playermd.gif); background-size: contain; width: "+tilesize+"px; height: "+tilesize+"px; position: absolute;'></div>");
 	hidemenus(); isGameActive=true; requestAnimationFrame(doAnimations);
@@ -438,7 +477,8 @@ function createPlayer() {
 
 function createHealthbar() {
 	playerHealth=playerMaxHealth;
-	document.getElementById("game").insertAdjacentHTML('afterbegin', "<div id='healthbarBackground' style='left: 4px; top: 4px; background-color: #FF0000; background-size: contain; width: 100px; height: 8px; position: absolute;'></div><div id='healthbar' style='left: 4px; top: 4px; background-color: #00FF00; background-size: contain; width: "+((playerHealth/playerMaxHealth)*100)+"px; height: 8px; position: absolute;'></div><p id='healthbarText' style='left: 4px; top: 4px; background-color: transparent; background-size: contain; width: 100px; height: 8px; position: absolute;'>Health: "+playerHealth+"/"+playerMaxHealth+"</p>");
+	document.getElementById("gameinner3").insertAdjacentHTML('afterbegin', "<div id='healthbarBackground' style='left: 4px; top: 4px; background-color: #FF0000; background-size: contain; width: 100px; height: 8px; position: absolute;'></div><div id='healthbar' style='left: 4px; top: 4px; background-color: #00FF00; background-size: contain; width: "+((playerHealth/playerMaxHealth)*100)+"px; height: 8px; position: absolute;'></div><p id='healthbarText' style='left: 4px; top: 4px; background-color: transparent; background-size: contain; width: 100px; height: 8px; position: absolute;'>Health: "+playerHealth+"/"+playerMaxHealth+"</p>");
+	document.getElementById("gameinner3").insertAdjacentHTML('afterbegin', "<div id='gamescore' style='right: 4px; top: 4px; position: absolute;'>Score: 0</div>");
 }
 
 function canMove(x,y) {
@@ -489,6 +529,7 @@ function playerShootBullet(clickX, clickY) {
 	bullet = {x:playerX+tilesize/2, y:playerY+tilesize/2, dx:bulletDX, dy:bulletDY, bulletid:bulletID, killtimer:pt()};
 	bullets.push(bullet);
 	createBullet(bullet);
+	getResource("sfxGun").play();
 }
 
 bulletSize = 2;
@@ -523,8 +564,11 @@ function updateBullets() {
 			if(bullets[i].x > e.x && bullets[i].x < e.x + 20 && bullets[i].y > e.y && bullets[i].y < e.y + 20) {
 				e.health -= 1;
 				document.getElementById(e.id+"h").style.display="block";
+				gamescore+=1;
 				//todo play enemy hurt animation
 				if(e.health <= 0) {
+					spawnDeadEnemy(e.x,e.y);
+					gamescore+=19;
 					killEnemy(en);
 				}
 				destroyBullet(i);
@@ -537,6 +581,7 @@ function updateBullets() {
 function updateHealthbar() {
 	document.getElementById('healthbar').style.width = (playerHealth/playerMaxHealth)*100+"px";
 	document.getElementById('healthbarText').innerHTML = "Health: "+playerHealth+"/"+playerMaxHealth;
+	document.getElementById('gamescore').innerHTML = "Score: "+gamescore;
 }
 
 function loseGame() {
