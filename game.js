@@ -222,8 +222,8 @@ function renderGameTiles() {
 			if(Math.random()<0.008 && gp(row,col)) createGameObject(getResource("cactus"), row*tilesize, col*tilesize);
 			if(Math.random()<0.004 && gp(row,col)) createGameObject(getResource("cactus2"), row*tilesize, col*tilesize);
 			if(Math.random()<0.003 && gp(row,col)) context.drawImage(getResource("rocks"), row*tilesize, col*tilesize);
-			if(Math.random()<0.003 && gp(row,col)) context.drawImage(getResource("cactus4"), row*tilesize, col*tilesize);
-			if(Math.random()<0.002 && gp(row,col)) context.drawImage(getResource("cactus3"), row*tilesize, col*tilesize);
+			if(Math.random()<0.003 && gp(row,col)) context.drawImage(getResource("cactus4"), row*tilesize, col*tilesize, 20, 20);
+			if(Math.random()<0.002 && gp(row,col)) context.drawImage(getResource("cactus3"), row*tilesize, col*tilesize, 20, 20);
 			if(Math.random()<0.0012 && gp(row,col)) context.drawImage(getResource("grave"), row*tilesize, col*tilesize);
 			if(Math.random()<0.0008 && gp(row,col)) context.drawImage(getResource("skeleton"), row*tilesize, col*tilesize);
 			if(Math.random()<0.0005 && gp(row,col)) createGameObject(getResource("windmill"), row*tilesize, col*tilesize-20,col*tilesize);
