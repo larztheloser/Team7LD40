@@ -100,7 +100,7 @@ onload=function() {
 };
 
 function loadGame() {
-	var assetsLoaded=0, assetstotal=27;
+	var assetsLoaded=0, assetstotal=28;
 	var assetCheck=function() { assetsLoaded++; if(assetsLoaded==assetstotal) mainMenu(); }.bind(this);
 	var pushasset=function(name,path) { var to=new Image(); to.onload=function() { addResource(name,to); assetCheck(); }.bind(this); to.src=path; };
 
@@ -125,6 +125,8 @@ function loadGame() {
 	pushasset("img14","dg_imgs/14.gif");
 	pushasset("cactus","graphics/cactus.gif");
 	pushasset("cactus2","graphics/cactus2.gif");
+	pushasset("cactus3","50px/cactus.gif");
+	pushasset("cactus4","50px/grass.gif");
 	pushasset("rocks","graphics/rocks.gif");
 	pushasset("grave","graphics/grave.gif");
 	pushasset("windmill","graphics/windmill.gif");
@@ -220,6 +222,8 @@ function renderGameTiles() {
 			if(Math.random()<0.008 && gp(row,col)) createGameObject(getResource("cactus"), row*tilesize, col*tilesize);
 			if(Math.random()<0.004 && gp(row,col)) createGameObject(getResource("cactus2"), row*tilesize, col*tilesize);
 			if(Math.random()<0.003 && gp(row,col)) context.drawImage(getResource("rocks"), row*tilesize, col*tilesize);
+			if(Math.random()<0.003 && gp(row,col)) context.drawImage(getResource("cactus4"), row*tilesize, col*tilesize);
+			if(Math.random()<0.002 && gp(row,col)) context.drawImage(getResource("cactus3"), row*tilesize, col*tilesize);
 			if(Math.random()<0.0012 && gp(row,col)) context.drawImage(getResource("grave"), row*tilesize, col*tilesize);
 			if(Math.random()<0.0008 && gp(row,col)) context.drawImage(getResource("skeleton"), row*tilesize, col*tilesize);
 			if(Math.random()<0.0005 && gp(row,col)) createGameObject(getResource("windmill"), row*tilesize, col*tilesize-20,col*tilesize);
@@ -265,7 +269,7 @@ function spawnEnemyNearEdge() {
 		x:x, y:y, speed: playerSpeed*(Math.random()*0.5+0.4),
 		path:[]
 	});
-	document.getElementById("gameinner2").insertAdjacentHTML('beforeend', "<div class='enemy' id='enemy"+enemyCounter+"' style='left: "+x+"px; top: "+y+"px; z-index: "+y+"; position: absolute; width: 20px; height: 20px; background-color: red;'></div>");
+	document.getElementById("gameinner2").insertAdjacentHTML('beforeend', "<div class='enemy' id='enemy"+enemyCounter+"' style='left: "+x+"px; top: "+y+"px; z-index: "+y+"; position: absolute; width: 20px; height: 20px; background-color: transparent; background-size: contain; background-image: url(50px/walker_walkingD.gif);'></div>");
 	enemyCounter++;
 }
 function updateEnemyPath(e) {
@@ -288,16 +292,14 @@ function updateEnemies() {
 		if(e.nextPathingUpdate<=tickTime) { e=updateEnemyPath(e); e.nextPathingUpdate=tickTime+1500; activeEnemies[i]=e; }
 		if(e.closeEnoughToPlayer) continue;
 		if(e.path.length===0) continue;
-		nextSpot=e.path[0]; var nxX=nextSpot[0],nxY=nextSpot[1];
+		var nextSpot=e.path[0]; var nxX=nextSpot[0],nxY=nextSpot[1],el=document.getElementById(e.id);
 		if(Math.abs(e.x-mappadding-nxX*tilesize)<=e.speed && Math.abs(e.y-mappadding-nxY*tilesize)<=e.speed) {
 			e.x=nxX*tilesize+mappadding; e.y=nxY*tilesize+mappadding; e.path.shift(); }
-		if(nxX*tilesize+mappadding>e.x) e.x+=e.speed;
-		if(nxX*tilesize+mappadding<e.x) e.x-=e.speed;
-		if(nxY*tilesize+mappadding>e.y) e.y+=e.speed;
-		if(nxY*tilesize+mappadding<e.y) e.y-=e.speed;
-		document.getElementById(e.id).style.left = e.x+"px";
-		document.getElementById(e.id).style.top = e.y+"px";
-		document.getElementById(e.id).style.zIndex = e.y;
+		if(nxX*tilesize+mappadding>e.x) { e.x+=e.speed; el.style.backgroundImage = "url('50px/walker_walkingR.gif')"; }
+		if(nxX*tilesize+mappadding<e.x) { e.x-=e.speed; el.style.backgroundImage = "url('50px/walker_walkingL.gif')"; }
+		if(nxY*tilesize+mappadding>e.y) { e.y+=e.speed; el.style.backgroundImage = "url('50px/walker_walkingD.gif')"; }
+		if(nxY*tilesize+mappadding<e.y) { e.y-=e.speed; el.style.backgroundImage = "url('50px/walker_walkingF.gif')"; }
+		el.style.left = e.x+"px"; el.style.top = e.y+"px"; el.style.zIndex = e.y;
 		activeEnemies[i]=e;
 	}
 }
