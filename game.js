@@ -75,6 +75,7 @@ prevSurviveMapSelection="arena";
 prevSurviveMapSizeSelection="150";
 function postSurvivalGame() {
 	document.getElementById("game").innerHTML="";
+	playMenuMusic();
 	mainMenu();
 }
 function survivegame() {
@@ -105,7 +106,7 @@ function updatesurvivemapname() { prevSurviveMapSelection=document.getElementByI
 function updateMapDesc() {
 	var desc="",map=document.getElementById("mcsmapname").value;
 	if(map=='arena') desc="Large open area in the middle with numerous canyons towards the edges of the map.";
-	if(map=='chase') desc="A rough, usually circular gorge.";
+	if(map=='chase') desc="A rough, usually circular gorge. Sometimes has starting issues.";
 	if(map=='valleys') desc="Open mesas and plains with a few secluded spaces.";
 	if(map=='colosseum') desc="Small map - fight in the classical dungeon of gladiators!";
 	if(map=='pyramid') desc="Small map - watch your enemies run towards you in circles like Lemmings :)";
@@ -134,10 +135,10 @@ function multgame() {
 	getResource('sfxSelect').play();
 	msgBox("This game mode is not yet available.","mainMenu()");
 }
-optInput='arrow'; optSfx=1.0;
+optInput='wasd'; optSfx=1.0; optMus=1.0;
 function options() {
 	getResource('sfxSelect').play();
-	document.getElementById("menus").innerHTML="<div class='menublock'><span class='menutitle'>Options</span><table><tr><td style='width: 100px;'><label for='optinput'>Movement:</label></td><td><select id='optinput' onchange='optInput=this.value;'><option value='arrow'>Arrow Keys</option><option value='wasd'>WASD Keys</option></select></td></tr><tr><td style='width: 100px;'><label for='sfxslider'>SFX Volume:</label></td><td><input id=\"sfxslider\" onchange=\"setSfxVol(this.value)\" type=\"range\" min=\"0.0\" max=\"1.0\" step =\"0.05\" value=\"1.0\"></td></tr></table><a href='javascript: void(0)' onclick=\"getResource('sfxBack').play();mainMenu()\">Back</a></div>";
+	document.getElementById("menus").innerHTML="<div class='menublock'><span class='menutitle'>Options</span><table><tr><td style='width: 100px;'><label for='optinput'>Movement:</label></td><td><select id='optinput' onchange='optInput=this.value;'><option value='arrow'>Arrow Keys</option><option value='wasd'>WASD Keys</option></select></td></tr><tr><td style='width: 100px;'><label for='sfxslider'>SFX Volume:</label></td><td><input id=\"sfxslider\" onchange=\"setSfxVol(this.value)\" type=\"range\" min=\"0.0\" max=\"1.0\" step =\"0.05\" value=\"1.0\"></td></tr><tr><td style='width: 100px;'><label for='musslider'>Music Volume:</label></td><td><input id=\"musslider\" onchange=\"setMusVol(this.value)\" type=\"range\" min=\"0.0\" max=\"1.0\" step =\"0.05\" value=\"0.8\"></td></tr></table><a href='javascript: void(0)' onclick=\"getResource('sfxBack').play();mainMenu()\">Back</a></div>";
 	document.getElementById("optinput").value=optInput;
 	document.getElementById("sfxslider").value=optSfx;
 }
@@ -147,6 +148,13 @@ function setSfxVol(x) {
 		if(registeredResources[i].name.substring(0, 3)=="sfx") registeredResources[i].res.volume(optSfx);
 	}
 	getResource("sfxGun").play();
+}
+function setMusVol(x) {
+	optMus=x;
+	for (var i = 0; i < registeredResources.length; i++) {
+		if(registeredResources[i].name.substring(0, 5)=="music") registeredResources[i].res.volume(optMus);
+	}
+	getResource("musicGun").play();
 }
 function credits() {
 	getResource('sfxSelect').play();
@@ -169,9 +177,9 @@ onload=function() {
 };
 
 function loadGame() {
-	var assetsLoaded=0, assetstotal=45; // remember to update the number of assets to load when changing this function
+	var assetsLoaded=0, assetstotal=53; // remember to update the number of assets to load when changing this function
 	document.getElementById("menus").innerHTML="<div class='msgblock'><div class='menutitle' style='color: #000;'>Loading</div><div id='loadbar' style='display: inline-block; width: 300px; height: 9px; border: 1px solid white; overflow: hidden'><div id='loadbarinner' style='width: 0; height: 9px; background-color: #fff;'></div></div></div>";
-	function startTheGame() { mainMenu(); }
+	function startTheGame() { playMenuMusic(); mainMenu(); }
 	var assetCheck=function() {
 		assetsLoaded++;
 		document.getElementById('loadbarinner').style.width=100/assetstotal*assetsLoaded+"%";
@@ -207,6 +215,14 @@ function loadGame() {
 	pushasset("walkerWF","50px/walker_walkingF.gif");
 	pushasset("walkerWL","50px/walker_walkingL.gif");
 	pushasset("walkerWR","50px/walker_walkingR.gif");
+	pushasset("fattyD","50px/FattyWalkD.gif");
+	pushasset("fattyF","50px/FattyWalkF.gif");
+	pushasset("fattyL","50px/FattyWalkL.gif");
+	pushasset("fattyR","50px/FattyWalkR.gif");
+	pushasset("jumpD","50px/jumper_JumpD.gif");
+	pushasset("jumpF","50px/jumper_JumpF.gif");
+	pushasset("jumpL","50px/jumper_JumpL.gif");
+	pushasset("jumpR","50px/jumper_JumpR.gif");
 	pushasset("rocks","graphics/rocks.gif");
 	pushasset("grave","graphics/grave.gif");
 	pushasset("windmill","graphics/windmill.gif");
@@ -224,13 +240,16 @@ function loadGame() {
 			if(assetsLoaded==assetstotal) startTheGame();
 			if(a=="howler.js") {
 				var pushsound=function(name,path) { var to=new Howl({src:[path],onload:function() { addResource(name,to); assetCheck(); }.bind(this)}); };
-				var pushmusic=function(name,path) { var to=new Howl({src:[path],onload:function() { addResource(name,to); }.bind(this), html5:true, loop:true}); };
+				var pushmusic=function(name,path) { var to=new Howl({src:[path],onload:function() { addResource(name,to); }.bind(this), html5:true, loop:true, volume: 0.8}); };
 				pushsound("sfxGun","sounds/Gun.mp3");
 				pushsound("sfxStart","sounds/Start.mp3");
 				pushsound("sfxSelect","sounds/Select.mp3");
 				pushsound("sfxBack","sounds/Back.mp3");
 				
 				pushmusic("musicIngame1","music/main-loop-sketch_1.0.mp3");
+				pushmusic("musicMenu","music/menu-sketch_2.0.mp3");
+				
+				var musicGun=new Howl({src:["sounds/Gun.mp3"],onload:function() { addResource("musicGun",musicGun); }.bind(this), volume: 0.8});
 			}
 		} }.bind(this));
 	loadjscssfile("pathing.js","js");
@@ -258,8 +277,12 @@ aStar={};
 musicPlaying=null;
 
 function playGameMusic() {
-	if(musicPlaying!==null) stopMusic();
+	stopMusic();
 	musicPlaying=getResource("musicIngame1").play();
+}
+function playMenuMusic() {
+	stopMusic();
+	musicPlaying=getResource("musicMenu").play();
 }
 function stopMusic() {
 	for (var i = 0; i < registeredResources.length; i++) {
@@ -268,7 +291,7 @@ function stopMusic() {
 }
 
 function generateMap() {
-	pathfinder=new PF.Grid(mapsize, mapsize); var tempcanvas,tempctx;
+	pathfinder=new PF.Grid(mapsize, mapsize); var tempcanvas,tempctx,row,col;
 	if(mapstyle=="snake valley" || mapstyle=="colosseum" || mapstyle=="two worlds" || mapstyle=="grand canyon" || mapstyle=="pyramid") {
 		var scenario;
 		if(mapstyle=="snake valley") scenario=getResource("svmap");
@@ -283,8 +306,8 @@ function generateMap() {
 		tempctx.drawImage(scenario, 0, 0, scenario.width, scenario.height);
 		mapsize=scenario.width;
 	}
-	for(var row=0;row<mapsize;row++) {
-		for(var col=0;col<mapsize;col++) {
+	for(row=0;row<mapsize;row++) {
+		for(col=0;col<mapsize;col++) {
 			if(mapstyle=="snake valley" || mapstyle=="colosseum" || mapstyle=="two worlds" || mapstyle=="grand canyon" || mapstyle=="pyramid") {
 				if(tempctx.getImageData(row, col, 1, 1).data[0]>0) {
 					gamemap[row*mapsize+col]=1;
@@ -304,10 +327,10 @@ function generateMap() {
 	var cpos;
 	function getX() { return cpos%mapsize; }
 	function getY() { return (cpos-getX())/mapsize; }
-	function goUp() { if(getY()!==1) cpos-=mapsize; }
-	function goDown() { if(getY()!==mapsize-1) cpos+=mapsize; }
-	function goLeft() { if(getX()!==1) cpos-=1; }
-	function goRight() { if(getX()!==mapsize-1) cpos+=1; }
+	function goUp() { if(getY()>=2) cpos-=mapsize; }
+	function goDown() { if(getY()<=mapsize-2) cpos+=mapsize; }
+	function goLeft() { if(getX()>=2) cpos-=1; }
+	function goRight() { if(getX()<=mapsize-2) cpos+=1; }
 	function reset() {
 		if(mapstyle=="arena" || mapstyle=="chase") cpos=halfmapsize*mapsize+halfmapsize;
 		if(mapstyle=="valleys") cpos=Math.floor(Math.random()*mapsize*mapsize);
@@ -342,6 +365,14 @@ function generateMap() {
 				gamemap[cpos]=0;
 				pathfinder.setWalkableAt(getY(), getX(), false);
 				if(Math.random()<0.005) break;
+			}
+		}
+	}
+	for(row=0;row<mapsize;row++) {
+		for(col=0;col<mapsize;col++) {
+			if(row===0 || col===0 || row==mapsize-1 || col==mapsize-1) {
+				gamemap[row*mapsize+col]=0;
+				pathfinder.setWalkableAt(row, col, false);
 			}
 		}
 	}
@@ -386,7 +417,7 @@ function renderGameTiles() {
 }
 enemyCounter=0;
 activeEnemies=[];
-function spawnEnemyNearEdge() {
+function spawnEnemyNearEdge(type) {
 	var x,y,maxcount=0;
 	switch(Math.floor(Math.random()*4)+1) {
 		case 1:
@@ -404,29 +435,63 @@ function spawnEnemyNearEdge() {
 				if(x>=mappadding+tilesize*mapsize) return; }
 			break;
 		case 3:
-			y=mappadding+mapsize*tilesize; x=mappadding+parseInt(Math.random()*mapsize)*tilesize;
+			y=mappadding+(mapsize-1)*tilesize; x=mappadding+parseInt(Math.random()*mapsize)*tilesize;
 			while(!canMove(x+6,y+9)) {
 				y-=tilesize;
 				if(mapstyle=="pyramid" || mapstyle=="grand canyon" || mapstyle=="two worlds") { maxcount++; if(maxcount>3) return; }
 				if(y<=mappadding) return; }
 			break;
 		default:
-			x=mappadding+mapsize*tilesize; y=mappadding+parseInt(Math.random()*mapsize)*tilesize;
+			x=mappadding+(mapsize-1)*tilesize; y=mappadding+parseInt(Math.random()*mapsize)*tilesize;
 			while(!canMove(x+6,y+9)) {
 				x-=tilesize;
 				if(mapstyle=="pyramid" || mapstyle=="grand canyon" || mapstyle=="two worlds") { maxcount++; if(maxcount>3) return; }
 				if(x<=mappadding) return; }
 			break;
 	}
+	var enemyspeed=playerSpeed*(Math.random()*0.5+0.4);
+	if(type==2) enemyspeed=enemyspeed*0.45;
+	if(type==3) enemyspeed=playerSpeed*(Math.random()*0.4+0.8);
+	var enemyhealth=5;
+	if(type==2) enemyhealth=12;
+	if(type==3) enemyhealth=2;
 	activeEnemies.push({
 		id: "enemy"+enemyCounter,
 		closeEnoughToPlayer: false,
 		nextPathingUpdate: -9999999999,
-		x:x, y:y, speed: playerSpeed*(Math.random()*0.5+0.4),
-		health:5,maxhealth:5, path:[]
+		x:x, y:y, speed: enemyspeed,
+		health:enemyhealth,maxhealth:enemyhealth, path:[], type:type
 	});
-	document.getElementById("gameinner2").insertAdjacentHTML('beforeend', "<div class='enemy' id='enemy"+enemyCounter+"' style='left: "+x+"px; top: "+y+"px; z-index: "+y+"; position: absolute; width: 20px; height: 20px; background-color: transparent; background-size: contain; background-image: url(50px/walker_walkingD.gif); overflow: visible;'><div class='ehpbar' id='enemy"+enemyCounter+"h' style='width: 20px; height: 2px; background-color: #F00; position: absolute; top: -4px; display: none;'><div id='enemy"+enemyCounter+"hi' style='width: 20px; height: 2px; background-color: #0F0; position: absolute;'></div></div></div>");
+	document.getElementById("gameinner2").insertAdjacentHTML('beforeend', "<div class='enemy' id='enemy"+enemyCounter+"' style='left: "+x+"px; top: "+y+"px; z-index: "+y+"; position: absolute; width: 20px; height: 20px; background-color: transparent; background-size: contain; background-image: url("+getEnemySpritePath(type,0)+"); overflow: visible;'><div class='ehpbar' id='enemy"+enemyCounter+"h' style='width: 20px; height: 2px; background-color: #F00; position: absolute; top: -4px; display: none;'><div id='enemy"+enemyCounter+"hi' style='width: 20px; height: 2px; background-color: #0F0; position: absolute;'></div></div></div>");
 	enemyCounter++;
+}
+function getEnemySpritePath(type, direction) {
+	switch(type) {
+		case 1:
+			switch(direction) {
+				case 0: return "50px/walker_walkingD.gif";
+				case 1: return "50px/walker_walkingF.gif";
+				case 2: return "50px/walker_walkingL.gif";
+				case 3: return "50px/walker_walkingR.gif";
+				default:  break;
+			} break;
+		case 2:
+			switch(direction) {
+				case 0: return "50px/FattyWalkD.gif";
+				case 1: return "50px/FattyWalkF.gif";
+				case 2: return "50px/FattyWalkL.gif";
+				case 3: return "50px/FattyWalkR.gif";
+				default:  break;
+			} break;
+		case 3:
+			switch(direction) {
+				case 0: return "50px/jumper_JumpD.gif";
+				case 1: return "50px/jumper_JumpF.gif";
+				case 2: return "50px/jumper_JumpL.gif";
+				case 3: return "50px/jumper_JumpR.gif";
+				default:  break;
+			} break;
+	}
 }
 function updateEnemyPath(e) {
 	var DPx=Math.abs(playerX-e.x);
@@ -458,16 +523,17 @@ function updateEnemies() {
 			playerHealth -= enemyDamage;
 			playerLastAttacked = time;
 		}
+		
 		if(e.nextPathingUpdate<=tickTime) { e=updateEnemyPath(e); e.nextPathingUpdate=tickTime+1500; activeEnemies[i]=e; }
 		if(e.closeEnoughToPlayer) continue;
 		if(e.path.length===0) continue;
 		var nextSpot=e.path[0]; var nxX=nextSpot[0],nxY=nextSpot[1],el=document.getElementById(e.id);
 		if(Math.abs(e.x-mappadding-nxX*tilesize)<=e.speed && Math.abs(e.y-mappadding-nxY*tilesize)<=e.speed) {
 			e.x=nxX*tilesize+mappadding; e.y=nxY*tilesize+mappadding; e.path.shift(); }
-		if(nxX*tilesize+mappadding>e.x) { e.x+=e.speed; el.style.backgroundImage = "url('50px/walker_walkingR.gif')"; }
-		if(nxX*tilesize+mappadding<e.x) { e.x-=e.speed; el.style.backgroundImage = "url('50px/walker_walkingL.gif')"; }
-		if(nxY*tilesize+mappadding>e.y) { e.y+=e.speed; el.style.backgroundImage = "url('50px/walker_walkingD.gif')"; }
-		if(nxY*tilesize+mappadding<e.y) { e.y-=e.speed; el.style.backgroundImage = "url('50px/walker_walkingF.gif')"; }
+		if(nxX*tilesize+mappadding>e.x) { e.x+=e.speed; el.style.backgroundImage = getEnemySpritePath(e.type,3); }
+		if(nxX*tilesize+mappadding<e.x) { e.x-=e.speed; el.style.backgroundImage = getEnemySpritePath(e.type,2); }
+		if(nxY*tilesize+mappadding>e.y) { e.y+=e.speed; el.style.backgroundImage = getEnemySpritePath(e.type,0); }
+		if(nxY*tilesize+mappadding<e.y) { e.y-=e.speed; el.style.backgroundImage = getEnemySpritePath(e.type,1); }
 		activeEnemies[i]=e;
 	}
 }
@@ -613,6 +679,8 @@ function updateBullets() {
 				if(e.health <= 0) {
 					spawnDeadEnemy(e.x,e.y);
 					gamescore+=19;
+					if(e.type==2) gamescore+=15;
+					else if(e.type==3) gamescore+=30;
 					killEnemy(en);
 				}
 				destroyBullet(i);
@@ -649,8 +717,10 @@ setInterval(function() {
 	updateBullets();
 	updateEnemies();
 	updateHealthbar();
-	if(Math.random()<0.0025+gamet()/13000000) spawnEnemyNearEdge();
-	if(mapstyle=="pyramid" && Math.random()<0.001+gamet()/10000000) spawnEnemyNearEdge();
+	if(Math.random()<0.0025+gamet()/13000000) spawnEnemyNearEdge(1);
+	if(mapstyle=="pyramid" && Math.random()<0.01+gamet()/13000000) spawnEnemyNearEdge(1);
+	if(Math.random()<-0.0015+gamet()/10000000) spawnEnemyNearEdge(2);
+	if(Math.random()<-0.004+gamet()/8000000) spawnEnemyNearEdge(3);
 	if(playerHealth <= 0) loseGame();
 },15);
 
