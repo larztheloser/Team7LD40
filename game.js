@@ -100,7 +100,7 @@ onload=function() {
 };
 
 function loadGame() {
-	var assetsLoaded=0, assetstotal=27;
+	var assetsLoaded=0, assetstotal=29;
 	var assetCheck=function() { assetsLoaded++; if(assetsLoaded==assetstotal) mainMenu(); }.bind(this);
 	var pushasset=function(name,path) { var to=new Image(); to.onload=function() { addResource(name,to); assetCheck(); }.bind(this); to.src=path; };
 
@@ -123,13 +123,18 @@ function loadGame() {
 	pushasset("img12","dg_imgs/12.gif");
 	pushasset("img13","dg_imgs/13.gif");
 	pushasset("img14","dg_imgs/14.gif");
+	pushasset("img15","dg_imgs/15.gif");
 	pushasset("cactus","graphics/cactus.gif");
 	pushasset("cactus2","graphics/cactus2.gif");
+	pushasset("cactus3","50px/cactus.gif");
+	pushasset("cactus4","50px/grass.gif");
 	pushasset("rocks","graphics/rocks.gif");
 	pushasset("grave","graphics/grave.gif");
 	pushasset("windmill","graphics/windmill.gif");
 	pushasset("watertower","graphics/watertower.gif");
 	pushasset("skeleton","graphics/skeleton.gif");
+	pushasset("svmap","maps/snakevalley.gif");
+	pushasset("comap","maps/colosseum.gif");
 	on("scriptload",function(a) { if(a=="pathing.js") { assetsLoaded++; aStar=new PF.AStarFinder(); if(assetsLoaded==assetstotal) mainMenu(); } }.bind(this));
 	loadjscssfile("pathing.js","js");
 }
@@ -148,19 +153,42 @@ gamemap=[];
 mapsize=150;
 tilesize=20;
 //current random maps: arena, valleys
-mapstyle="arena";
+//current scenario maps: snake valley, colosseum
+mapstyle="colosseum";
 isGameActive=false;
 pathfinder=false;
 aStar={};
 
 function generateMap() {
-	pathfinder=new PF.Grid(mapsize, mapsize);
+	pathfinder=new PF.Grid(mapsize, mapsize); var tempcanvas,tempctx;
+	if(mapstyle=="snake valley" || mapstyle=="colosseum") {
+		var scenario;
+		if(mapstyle=="snake valley") scenario=getResource("svmap");
+		if(mapstyle=="colosseum") scenario=getResource("comap");
+		tempcanvas = document.createElement('canvas');
+		tempcanvas.width = scenario.width;
+		tempcanvas.height = scenario.height;
+		tempctx=tempcanvas.getContext('2d');
+		tempctx.drawImage(scenario, 0, 0, scenario.width, scenario.height);
+		mapsize=scenario.width;
+	}
 	for(var row=0;row<mapsize;row++) {
 		for(var col=0;col<mapsize;col++) {
+			if(mapstyle=="snake valley" || mapstyle=="colosseum") {
+				if(tempctx.getImageData(row, col, 1, 1).data[0]>0) {
+					gamemap[row*mapsize+col]=1;
+					pathfinder.setWalkableAt(row, col, true);
+				} else {
+					gamemap[row*mapsize+col]=0;
+					pathfinder.setWalkableAt(row, col, false);
+				}
+				continue;
+			}
 			gamemap[row*mapsize+col]=0;
 			pathfinder.setWalkableAt(row, col, false);
 		}
 	}
+	if(mapstyle=="snake valley" || mapstyle=="colosseum") return;
 	var halfmapsize=Math.round(mapsize/2);
 	var cpos;
 	function getX() { return cpos%mapsize; }
@@ -169,6 +197,10 @@ function generateMap() {
 	function goDown() { if(getY()!==mapsize-1) cpos+=mapsize; }
 	function goLeft() { if(getX()!==1) cpos-=1; }
 	function goRight() { if(getX()!==mapsize-1) cpos+=1; }
+	
+	
+	//svmap
+	
 	function reset() {
 		if(mapstyle=="arena") cpos=halfmapsize*mapsize+halfmapsize;
 		if(mapstyle=="valleys") cpos=Math.floor(Math.random()*mapsize*mapsize);
@@ -214,12 +246,14 @@ function renderGameTiles() {
 			else if(gp(row,col) && gp(row-1,col)) context.drawImage(getResource("img03"), row*tilesize, col*tilesize);
 			else if(gp(row,col) && gp(row,col+1)) context.drawImage(getResource("img13"), row*tilesize, col*tilesize);
 			else if(gp(row,col) && gp(row,col-1)) context.drawImage(getResource("img12"), row*tilesize, col*tilesize);
-			else if(gp(row,col)) context.drawImage(getResource("img14"), row*tilesize, col*tilesize);
+			else if(gp(row,col)) context.drawImage(getResource("img15"), row*tilesize, col*tilesize);
 			else context.fillRect(row*tilesize, col*tilesize, tilesize, tilesize);
 		//	context.drawImage(getResource("sand"), row*tilesize, col*tilesize);
 			if(Math.random()<0.008 && gp(row,col)) createGameObject(getResource("cactus"), row*tilesize, col*tilesize);
 			if(Math.random()<0.004 && gp(row,col)) createGameObject(getResource("cactus2"), row*tilesize, col*tilesize);
 			if(Math.random()<0.003 && gp(row,col)) context.drawImage(getResource("rocks"), row*tilesize, col*tilesize);
+			if(Math.random()<0.003 && gp(row,col)) context.drawImage(getResource("cactus4"), row*tilesize, col*tilesize, 20, 20);
+			if(Math.random()<0.002 && gp(row,col)) context.drawImage(getResource("cactus3"), row*tilesize, col*tilesize, 20, 20);
 			if(Math.random()<0.0012 && gp(row,col)) context.drawImage(getResource("grave"), row*tilesize, col*tilesize);
 			if(Math.random()<0.0008 && gp(row,col)) context.drawImage(getResource("skeleton"), row*tilesize, col*tilesize);
 			if(Math.random()<0.0005 && gp(row,col)) createGameObject(getResource("windmill"), row*tilesize, col*tilesize-20,col*tilesize);
@@ -265,7 +299,7 @@ function spawnEnemyNearEdge() {
 		x:x, y:y, speed: playerSpeed*(Math.random()*0.5+0.4),
 		path:[]
 	});
-	document.getElementById("gameinner2").insertAdjacentHTML('beforeend', "<div class='enemy' id='enemy"+enemyCounter+"' style='left: "+x+"px; top: "+y+"px; z-index: "+y+"; position: absolute; width: 20px; height: 20px; background-color: red;'></div>");
+	document.getElementById("gameinner2").insertAdjacentHTML('beforeend', "<div class='enemy' id='enemy"+enemyCounter+"' style='left: "+x+"px; top: "+y+"px; z-index: "+y+"; position: absolute; width: 20px; height: 20px; background-color: transparent; background-size: contain; background-image: url(50px/walker_walkingD.gif);'></div>");
 	enemyCounter++;
 }
 function updateEnemyPath(e) {
@@ -288,16 +322,14 @@ function updateEnemies() {
 		if(e.nextPathingUpdate<=tickTime) { e=updateEnemyPath(e); e.nextPathingUpdate=tickTime+1500; activeEnemies[i]=e; }
 		if(e.closeEnoughToPlayer) continue;
 		if(e.path.length===0) continue;
-		nextSpot=e.path[0]; var nxX=nextSpot[0],nxY=nextSpot[1];
+		var nextSpot=e.path[0]; var nxX=nextSpot[0],nxY=nextSpot[1],el=document.getElementById(e.id);
 		if(Math.abs(e.x-mappadding-nxX*tilesize)<=e.speed && Math.abs(e.y-mappadding-nxY*tilesize)<=e.speed) {
 			e.x=nxX*tilesize+mappadding; e.y=nxY*tilesize+mappadding; e.path.shift(); }
-		if(nxX*tilesize+mappadding>e.x) e.x+=e.speed;
-		if(nxX*tilesize+mappadding<e.x) e.x-=e.speed;
-		if(nxY*tilesize+mappadding>e.y) e.y+=e.speed;
-		if(nxY*tilesize+mappadding<e.y) e.y-=e.speed;
-		document.getElementById(e.id).style.left = e.x+"px";
-		document.getElementById(e.id).style.top = e.y+"px";
-		document.getElementById(e.id).style.zIndex = e.y;
+		if(nxX*tilesize+mappadding>e.x) { e.x+=e.speed; el.style.backgroundImage = "url('50px/walker_walkingR.gif')"; }
+		if(nxX*tilesize+mappadding<e.x) { e.x-=e.speed; el.style.backgroundImage = "url('50px/walker_walkingL.gif')"; }
+		if(nxY*tilesize+mappadding>e.y) { e.y+=e.speed; el.style.backgroundImage = "url('50px/walker_walkingD.gif')"; }
+		if(nxY*tilesize+mappadding<e.y) { e.y-=e.speed; el.style.backgroundImage = "url('50px/walker_walkingF.gif')"; }
+		el.style.left = e.x+"px"; el.style.top = e.y+"px"; el.style.zIndex = e.y;
 		activeEnemies[i]=e;
 	}
 }
@@ -402,17 +434,15 @@ setInterval(function() {
 	updateEnemies();
 	if(Math.random()<0.001+gamet()/10000000) spawnEnemyNearEdge();
 },15);
+
 doAnimations=function() {
 	document.getElementById('playerAvatar').style.left = playerX+"px";
 	document.getElementById('playerAvatar').style.top = playerY+"px";
 	document.getElementById('playerAvatar').style.zIndex = playerY;
-	document.getElementById('gameinner').scrollLeft = (playerX-392)*2.6-mappadding*1.34;
-	document.getElementById('gameinner').scrollTop = (playerY-1012)*2.6-mappadding*1.62;
+	document.getElementById('gameinner').scrollLeft = (playerX-392)*2.6-mappadding*1.34; //150 - 392
+	document.getElementById('gameinner').scrollTop = (playerY-6*mapsize-100)*2.6-mappadding*1.62; //150 - 1012
 	requestAnimationFrame(doAnimations);
 };
-
-
-
 
 
 
