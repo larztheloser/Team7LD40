@@ -372,10 +372,9 @@ function spawnEnemyNearEdge() {
 		closeEnoughToPlayer: false,
 		nextPathingUpdate: -9999999999,
 		x:x, y:y, speed: playerSpeed*(Math.random()*0.5+0.4),
-		health: 5,
-		path:[]
+		health:5,maxhealth:5, path:[]
 	});
-	document.getElementById("gameinner2").insertAdjacentHTML('beforeend', "<div class='enemy' id='enemy"+enemyCounter+"' style='left: "+x+"px; top: "+y+"px; z-index: "+y+"; position: absolute; width: 20px; height: 20px; background-color: transparent; background-size: contain; background-image: url(50px/walker_walkingD.gif);'></div>");
+	document.getElementById("gameinner2").insertAdjacentHTML('beforeend', "<div class='enemy' id='enemy"+enemyCounter+"' style='left: "+x+"px; top: "+y+"px; z-index: "+y+"; position: absolute; width: 20px; height: 20px; background-color: transparent; background-size: contain; background-image: url(50px/walker_walkingD.gif); overflow: visible;'><div class='ehpbar' id='enemy"+enemyCounter+"h' style='width: 20px; height: 2px; background-color: #F00; position: absolute; top: -4px; display: none;'><div id='enemy"+enemyCounter+"hi' style='width: 20px; height: 2px; background-color: #0F0; position: absolute;'></div></div></div>");
 	enemyCounter++;
 }
 function updateEnemyPath(e) {
@@ -523,6 +522,7 @@ function updateBullets() {
 			if(typeof bullets[i]=="undefined" || typeof e=="undefined") continue;
 			if(bullets[i].x > e.x && bullets[i].x < e.x + 20 && bullets[i].y > e.y && bullets[i].y < e.y + 20) {
 				e.health -= 1;
+				document.getElementById(e.id+"h").style.display="block";
 				//todo play enemy hurt animation
 				if(e.health <= 0) {
 					killEnemy(en);
@@ -575,6 +575,7 @@ doAnimations=function() {
 	for(i = 0; i < activeEnemies.length; i++) {
 		var e=activeEnemies[i],el=document.getElementById(e.id);
 		el.style.left = e.x+"px"; el.style.top = e.y+"px"; el.style.zIndex = e.y;
+		document.getElementById(e.id+"hi").style.width=(20/e.maxhealth*e.health) +"px";
 	}
 	document.getElementById('playerAvatar').style.left = playerX+"px";
 	document.getElementById('playerAvatar').style.top = playerY+"px";
