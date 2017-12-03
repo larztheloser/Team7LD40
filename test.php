@@ -48,7 +48,7 @@ html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; text-align: 
 	padding: 9px; margin: 4px;
 	width: 300px;
 }
-.menutitle {
+.menutitle, #gamescore {
 	display: block;
 	padding: 4px;
 	font-weight: bold;
@@ -67,6 +67,9 @@ select {
 	width: 100%; height: 100%; overflow: hidden; position: absolute;
 }
 #gameinner {
+	position: absolute; left: 50%; top: 50%; margin-left: -400px; width: 800px; margin-top: -300px; height: 600px; overflow: hidden;
+}
+#gameinner3 {
 	position: absolute; left: 50%; top: 50%; margin-left: -400px; width: 800px; margin-top: -300px; height: 600px; overflow: hidden;
 }
 #gameinner2 {
