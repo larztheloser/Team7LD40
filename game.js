@@ -69,7 +69,49 @@ function mainMenu() {
 function msgBox(txt,fwd) {
 	document.getElementById("menus").innerHTML="<div class='msgblock'>"+txt+"<br><a href='javascript: void(0)' onclick=\""+fwd+"\" class='msgclink'>Continue</a></div>";
 }
+prevSurviveMapTypeSelection="r";
+prevSurviveMapSelection="arena";
+prevSurviveMapSizeSelection="150";
 function survivegame() {
+	document.getElementById("menus").innerHTML="<div class='menublock'><span class='menutitle'>Setup Game</span><table><tr><td style='width: 100px;'><label for='mcsgametype'>Game Type:</label></td><td><select onchange='updatesurvivegamemenu(false)' id='mcsgametype'><option value='r' selected>Random Map</option><option value='s'>Scenario</option></select></td></tr><tr><td><label for='mcsmapname'>Map Name:</label></td><td><select id='mcsmapname' onchange='updatesurvivemapname()'></select></td></tr><tr><td colspan=2 id='mapdesc' style='font-size: 11px; height: 30px;'></td></tr><tr id='mcshfscn'><td><label for='mcsmapsize'>Map Size:</label></td><td><select id='mcsmapsize' onchange='updatesurvivemapsize()'><option value='45'>Small</option><option value='100'>Medium</option><option value='150'>Large</option></select></td></tr></table><a href='javascript: void(0)' onclick='mainMenu()'>Back</a><a href='javascript: void(0)' onclick='startsurvivegame()'>PLAY</a></div>";
+	document.getElementById("mcsgametype").value=prevSurviveMapTypeSelection;
+	updatesurvivegamemenu(true);
+	document.getElementById("mcsmapname").value=prevSurviveMapSelection;
+	updateMapDesc();
+	document.getElementById("mcsmapsize").value=prevSurviveMapSizeSelection;
+}
+function updatesurvivegamemenu(a) {
+	var elem=document.getElementById("mcsgametype");
+	if(prevSurviveMapTypeSelection==elem.value && !a) return;
+	prevSurviveMapTypeSelection=elem.value;
+	var elem2=document.getElementById("mcsmapname");
+	if(elem.value=="r") {
+		elem2.innerHTML="<option value='arena'>Arena</option><option value='valleys'>Valleys</option>";
+		document.getElementById("mcshfscn").style.display="table-row";
+	} else {
+		elem2.innerHTML="<option value='colosseum'>Colosseum</option><option value='snake valley'>Snake Valley</option><option value='two worlds'>Two Worlds</option>";
+		document.getElementById("mcshfscn").style.display="none";
+	}
+	if(!a) updatesurvivemapname();
+}
+function updatesurvivemapsize() { prevSurviveMapSizeSelection=document.getElementById("mcsmapsize").value; }
+function updatesurvivemapname() { prevSurviveMapSelection=document.getElementById("mcsmapname").value; updateMapDesc(); }
+function updateMapDesc() {
+	var desc="",map=document.getElementById("mcsmapname").value;
+	if(map=='arena') desc="Large open area in the middle with numerous canyons towards the edges of the map.";
+	if(map=='valleys') desc="Open mesas and plains with a few secluded spaces.";
+	if(map=='colosseum') desc="Small map - fight in the classical dungeon of gladiators!";
+	if(map=='snake valley') desc="Maze-like canyons can make these valleys deceptive and hard to navigate.";
+	if(map=='two worlds') desc="Small map - enemies will come at you from both left and right on this map.";
+	document.getElementById("mapdesc").innerHTML=desc;
+}
+
+
+
+
+function startsurvivegame() {
+	mapstyle=document.getElementById("mcsmapname").value;
+	mapsize=150;
 	generateMap();
 	renderGameTiles();
 	gameStartTime=new Date().getTime();
@@ -100,7 +142,7 @@ onload=function() {
 };
 
 function loadGame() {
-	var assetsLoaded=0, assetstotal=29;
+	var assetsLoaded=0, assetstotal=33;
 	var assetCheck=function() { assetsLoaded++; if(assetsLoaded==assetstotal) mainMenu(); }.bind(this);
 	var pushasset=function(name,path) { var to=new Image(); to.onload=function() { addResource(name,to); assetCheck(); }.bind(this); to.src=path; };
 
@@ -135,6 +177,7 @@ function loadGame() {
 	pushasset("skeleton","graphics/skeleton.gif");
 	pushasset("svmap","maps/snakevalley.gif");
 	pushasset("comap","maps/colosseum.gif");
+	pushasset("twmap","maps/twoworlds.gif");
 	on("scriptload",function(a) { if(a=="pathing.js") { assetsLoaded++; aStar=new PF.AStarFinder(); if(assetsLoaded==assetstotal) mainMenu(); } }.bind(this));
 	loadjscssfile("pathing.js","js");
 }
@@ -152,8 +195,6 @@ var maxBullets = 25;
 gamemap=[];
 mapsize=150;
 tilesize=20;
-//current random maps: arena, valleys
-//current scenario maps: snake valley, colosseum
 mapstyle="colosseum";
 isGameActive=false;
 pathfinder=false;
@@ -161,10 +202,11 @@ aStar={};
 
 function generateMap() {
 	pathfinder=new PF.Grid(mapsize, mapsize); var tempcanvas,tempctx;
-	if(mapstyle=="snake valley" || mapstyle=="colosseum") {
+	if(mapstyle=="snake valley" || mapstyle=="colosseum" || mapstyle=="two worlds") {
 		var scenario;
 		if(mapstyle=="snake valley") scenario=getResource("svmap");
 		if(mapstyle=="colosseum") scenario=getResource("comap");
+		if(mapstyle=="two worlds") scenario=getResource("twmap");
 		tempcanvas = document.createElement('canvas');
 		tempcanvas.width = scenario.width;
 		tempcanvas.height = scenario.height;
@@ -174,7 +216,7 @@ function generateMap() {
 	}
 	for(var row=0;row<mapsize;row++) {
 		for(var col=0;col<mapsize;col++) {
-			if(mapstyle=="snake valley" || mapstyle=="colosseum") {
+			if(mapstyle=="snake valley" || mapstyle=="colosseum" || mapstyle=="two worlds") {
 				if(tempctx.getImageData(row, col, 1, 1).data[0]>0) {
 					gamemap[row*mapsize+col]=1;
 					pathfinder.setWalkableAt(row, col, true);
@@ -188,7 +230,7 @@ function generateMap() {
 			pathfinder.setWalkableAt(row, col, false);
 		}
 	}
-	if(mapstyle=="snake valley" || mapstyle=="colosseum") return;
+	if(mapstyle=="snake valley" || mapstyle=="colosseum" || mapstyle=="two worlds") return;
 	var halfmapsize=Math.round(mapsize/2);
 	var cpos;
 	function getX() { return cpos%mapsize; }
@@ -343,7 +385,7 @@ function createGameObject(img,x,y,z) {
 var mappadding=2500;
 var playerX=0,playerY=0,playerDX=0,playerDY=0,playerSpeed=2;
 function createPlayer() {
-	playerX=Math.round(mapsize/2)*tilesize+mappadding; playerY=Math.round(mapsize/2)*tilesize+mappadding;
+	playerX=Math.floor(mapsize/2)*tilesize+mappadding; playerY=Math.floor(mapsize/2)*tilesize+mappadding;
 	if(!canMove(playerX,playerY)) { while(!canMove(playerX,playerY)) { playerX+=tilesize; } }
 	document.getElementById("gameinner2").insertAdjacentHTML('afterbegin', "<div id='playerAvatar' style='left: "+playerX+"px; top: "+playerY+"px; background-color: transparent; background-image: url(graphics/playermd.gif); background-size: contain; width: "+tilesize+"px; height: "+tilesize+"px; position: absolute;'></div>");
 	hidemenus(); isGameActive=true; requestAnimationFrame(doAnimations);
