@@ -317,7 +317,7 @@ onload=function() {
 };
 
 function loadGame() {
-	var assetsLoaded=0, assetstotal=75; // remember to update the number of assets to load when changing this function
+	var assetsLoaded=0, assetstotal=76; // remember to update the number of assets to load when changing this function
 	document.getElementById("menus").innerHTML="<div class='msgblock'><div class='menutitle' style='color: #000;'>Loading</div><div id='loadbar' style='display: inline-block; width: 300px; height: 9px; border: 1px solid white; overflow: hidden'><div id='loadbarinner' style='width: 0; height: 9px; background-color: #fff;'></div></div></div>";
 	function startTheGame() { playMenuMusic(); mainMenu(); }
 	var assetCheck=function() {
@@ -382,6 +382,7 @@ function loadGame() {
 	pushasset("tutorial","maps/tutorial.gif");
 	pushasset("flag","graphics/flag.gif");
 	pushasset("target","graphics/target.gif");
+	pushasset("radiation","graphics/radiation.png");
 	on("scriptload",function(a) {
 		if(a=="pathing.js"||a=="howler.js") {
 			assetsLoaded++;
@@ -639,7 +640,6 @@ function spawnEnemyNearEdge(type) {
 				if(x<=mappadding) return; }
 			break;
 	}
-<<<<<<< HEAD
 	var enemyspeed=playerSpeed*(Math.random()*0.7+0.4)*((fallout+500)/1000);
 	if(type==2) enemyspeed=enemyspeed*0.45;
 	if(type==3) enemyspeed=playerSpeed*(Math.random()*0.4+0.8)*((fallout+500)/1000);
@@ -655,9 +655,7 @@ function spawnEnemyNearEdge(type) {
 	});
 	document.getElementById("gameinner2").insertAdjacentHTML('beforeend', "<div class='enemy' id='enemy"+enemyCounter+"' style='left: "+x+"px; top: "+y+"px; z-index: "+y+"; position: absolute; width: 20px; height: 20px; background-color: transparent; background-size: contain; background-image: url("+getEnemySpritePath(type,0)+"); overflow: visible;'><div class='ehpbar' id='enemy"+enemyCounter+"h' style='width: 20px; height: 2px; background-color: #F00; position: absolute; top: -4px; display: none;'><div id='enemy"+enemyCounter+"hi' style='width: 20px; height: 2px; background-color: #0F0; position: absolute;'></div></div></div>");
 	enemyCounter++;
-=======
 	spawnEnemy(type,x,y);
->>>>>>> ef8dc65efd4b116888219b4e305d35f8a16327ee
 }
 function getEnemySpritePath(type, direction) {
 	switch(type) {
@@ -746,11 +744,12 @@ function contaminate(x, y, power) {
 	x=Math.floor((x+3)/tilesize); y=Math.floor((y+5)/tilesize);
 	contammap[x*mapsize+y]=1;
 	var context = document.getElementById('drawcanvas').getContext("2d");
-	context.drawImage(getResource(""), x*tilesize, y*tilesize);
+	context.drawImage(getResource("radiation"), x*tilesize, y*tilesize);
 	if(power > 1) {
-		if(Math.random() < 0.25) contaminate(x+tilesize, y, power-1);
-		else if(Math.random() < 0.5) contaminate(x-tilesize, y, power-1);
-		else if(Math.random() < 0.75) contaminate(x, y+tilesize, power-1);
+		var rand = Math.random();
+		if(rand < 0.25) contaminate(x+tilesize, y, power-1);
+		else if(rand < 0.5) contaminate(x-tilesize, y, power-1);
+		else if(rand < 0.75) contaminate(x, y+tilesize, power-1);
 		else contaminate(x-tilesize, y-tilesize, power-1);
 	}
 }
@@ -1067,8 +1066,10 @@ function updateTutorialScript() {
 setInterval(function() {
 	if(!isGameActive) return;
 	if(canMove(playerX+playerDX*playerSpeed,playerY+playerDY*playerSpeed)) {
-		playerX+=playerDX*playerSpeed;
-		playerY+=playerDY*playerSpeed;
+		contamFactor = 1;
+		if(inContaminatedSpace(playerX, playerY)) contamFactor = 0.5;
+		playerX+=playerDX*playerSpeed*contamFactor;
+		playerY+=playerDY*playerSpeed*contamFactor;
 	}
 	if(playerDX==-1) document.getElementById("playerAvatar").style.backgroundImage="url(graphics/playerml.gif)";
 	else if(playerDX==1) document.getElementById("playerAvatar").style.backgroundImage="url(graphics/playermr.gif)";
