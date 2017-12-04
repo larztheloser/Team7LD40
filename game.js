@@ -100,6 +100,7 @@ function postManualQuitSurvival() {
 	mainMenu();
 }
 function postSurvivalGame() {
+	if(tutorial) { postManualQuitSurvival(); return; }
 	document.getElementById("game").innerHTML="";
 	document.getElementById("menus").innerHTML="<div class='msgblock'><span class='menutitle'>Loading - Please Wait</span></div>";
 	ajax("leaderboard.php?m="+mapstyle+mapsize+"&t="+Math.random());
@@ -205,9 +206,6 @@ function campaigngame() {
 	playGameMusic();
 	startTutorialScript();
 }
-
-
-
 
 
 var _warpclient,donecxn=false,amplayingmulti=false,multiroomId;
@@ -789,6 +787,7 @@ function createPlayer() {
 	playerX=Math.floor(mapsize/2)*tilesize+mappadding; playerY=Math.floor(mapsize/2)*tilesize+mappadding; gamescore=0;
 	if(!canMove(playerX,playerY)) { while(!canMove(playerX,playerY)) { playerX+=tilesize; } }
 	document.getElementById("gameinner2").insertAdjacentHTML('afterbegin', "<div id='playerAvatar' style='left: "+playerX+"px; top: "+playerY+"px; background-color: transparent; background-image: url(graphics/playermd.gif); background-size: contain; width: "+tilesize+"px; height: "+tilesize+"px; position: absolute;'></div>");
+	document.getElementById("bgimg").style.display="none";
 	hidemenus(); isGameActive=true; requestAnimationFrame(doAnimations);
 }
 
@@ -986,8 +985,17 @@ function tuscr4() {
 }
 function tuscr5() {
 	tutorial_nobullets=true; tutorialStage=5;
-	msgBox("<div style='text-align:left'>Great job. Of course, a real enemy will be more dangerous than some dummy target. Enemies walk towards you - and if they get close enough, they will attack and cause you to lose health. You can check your current health and score the top of the screen.<br><br>Attack the spawned alien.</div>","hidemenus(); tutorial_nobullets=false; spawnEnemy(1, 9*tilesize+mappadding, 35*tilesize+mappadding);");
+	msgBox("<div style='text-align:left'>Great job. Of course, a real enemy will be more dangerous than some dummy target. Enemies walk towards you - and if they get close enough, they will attack and cause you to lose health. You can check your current health and score the top of the screen.<br><br>Attack the spawned alien.</div>","hidemenus(); tutorial_nobullets=false; tutorialStage=6; spawnEnemy(1, 9*tilesize+mappadding, 35*tilesize+mappadding);");
 }
+function tuscr7() {
+	tutorial_nobullets=true; tutorialStage=7;
+	msgBox("<div style='text-align:left'>Good. Now let's see how you do with multiple enemies at once.</div>","hidemenus(); tutorial_nobullets=false; tutorialStage=8; spawnEnemy(1, 9*tilesize+mappadding, 35*tilesize+mappadding); spawnEnemy(1, 9*tilesize+mappadding, 36*tilesize+mappadding);spawnEnemy(1, 10*tilesize+mappadding, 35*tilesize+mappadding);");
+}
+function tuscr9() {
+	tutorial_nobullets=true; tutorialStage=9;
+	msgBox("<div style='text-align:left'>Looks like they won't be bothering us any more! There are also other types of enemies in the game, with different strengths and weaknesses. Try shooting two different types of enemies.</div>","hidemenus(); tutorial_nobullets=false; tutorialStage=10; spawnEnemy(2, 9*tilesize+mappadding, 35*tilesize+mappadding); spawnEnemy(3, 9*tilesize+mappadding, 36*tilesize+mappadding);");
+}
+
 function updateTutorialScript() {
 	if(tutorialStage==2) {
 		if(Math.abs(playerX-3118)<10 && Math.abs(playerY-3052)<10) tuscr3();
@@ -997,6 +1005,12 @@ function updateTutorialScript() {
 	}
 	if(tutorialStage==4) {
 		if(activeEnemies.length===0) tuscr5();
+	}
+	if(tutorialStage==6) {
+		if(activeEnemies.length===0) tuscr7();
+	}
+	if(tutorialStage==8) {
+		if(activeEnemies.length===0) tuscr9();
 	}
 }
 
