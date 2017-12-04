@@ -631,9 +631,9 @@ function spawnEnemyNearEdge(type) {
 				if(x<=mappadding) return; }
 			break;
 	}
-	var enemyspeed=playerSpeed*(Math.random()*0.7+0.4)*((fallout+500)/1000);
+	var enemyspeed=playerSpeed*(Math.random()*1.0+0.4)*((fallout+500)/1000);
 	if(type==2) enemyspeed=enemyspeed*0.45;
-	if(type==3) enemyspeed=playerSpeed*(Math.random()*0.4+0.8)*((fallout+500)/1000);
+	if(type==3) enemyspeed=playerSpeed*(Math.random()*0.6+0.8)*((fallout+500)/1000);
 	var enemyhealth=5*((fallout+500)/1000);
 	if(type==2) enemyhealth=12*((fallout+500)/1000);
 	if(type==3) enemyhealth=2*((fallout+500)/1000);
