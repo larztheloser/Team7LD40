@@ -923,7 +923,7 @@ function playerShootBullet(clickX, clickY) {
 	bullets.push(bullet);
 	createBullet(bullet);
 	getResource("sfxGun").play();
-	fallout+=0.25;
+	fallout+=0.75;
 }
 
 bulletSize = 2;
