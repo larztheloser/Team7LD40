@@ -76,8 +76,10 @@ MENU
 */
 
 function mainMenu() {
-	document.getElementById("menus").innerHTML="<div class='menublock'><a href='javascript: void(0)' onclick='survivegame()'>Survival Mode</a><a href='javascript: void(0)' onclick='campaigngame()'>Campaign</a><a href='javascript: void(0)' onclick='multgame()'>Multiplayer</a><a href='javascript: void(0)' onclick='options()'>Options</a><a href='javascript: void(0)' onclick='credits()'>Credits</a></div>";
-	setLinksHighlights();
+	amplayingmulti=false; enemygen=true; tutorial=false;
+	document.getElementById("bgimg").style.display="block";
+	document.getElementById("menus").innerHTML="<div class='menublock'><a href='javascript: void(0)' onclick='survivegame()'>Survival Mode</a><a href='javascript: void(0)' onclick='campaigngame()'>Tutorial</a><a href='javascript: void(0)' onclick='options()'>Options</a><a href='javascript: void(0)' onclick='credits()'>Credits</a></div>";
+	setLinksHighlights();//<a href='javascript: void(0)' onclick='multgame()'>Multiplayer</a>
 }
 function setLinksHighlights() {
 	var links = document.querySelectorAll('.menublock>a'), i;
@@ -92,27 +94,34 @@ function msgBox(txt,fwd) {
 prevSurviveMapTypeSelection="r";
 prevSurviveMapSelection="arena";
 prevSurviveMapSizeSelection="150";
+function postManualQuitSurvival() {
+	document.getElementById("game").innerHTML="";
+	playMenuMusic();
+	mainMenu();
+}
 function postSurvivalGame() {
 	document.getElementById("game").innerHTML="";
 	document.getElementById("menus").innerHTML="<div class='msgblock'><span class='menutitle'>Loading - Please Wait</span></div>";
-	ajax("leaderboard.php?m="+mapstyle+mapsize);
+	ajax("leaderboard.php?m="+mapstyle+mapsize+"&t="+Math.random());
 }
 on("ajaxDone",function(v) {
 	if(v[0].substring(0,17)=="leaderboard.php?s") {
 		document.getElementById("menus").innerHTML="<div class='msgblock'><span class='menutitle'>Highscore Submitted</span>Thank you for playing!<br><a href='javascript: void(0)' onclick=\"getResource('sfxSelect').play(); playMenuMusic(); mainMenu();\" onmouseover=\"getResource('sfxHighlight').play();\" class='msgclink'>Continue</a></div>";
 	} else if(v[0].substring(0,17)=="leaderboard.php?m") {
 		var parsed = JSON.parse(v[1]);
-		var cscores="<table>";
-		var winscore=false;
+		var cscores="<table style=\"width: 100%; font-size: 16px; font-family: 'I.F.C. LOS BANDITOS';\">";
+		var winscore=false; var ths=0;
 		for(var key in parsed) {
 			if(parsed.hasOwnProperty(key)) {
-				var score=p[key];
-				cscores+="<tr><td>"+score.n+"</td><td>"+score.s+"</td></tr>";
+				var score=parsed[key]; ths++;
+				cscores+="<tr><td style='width: 50%;text-align:center;'>"+score.n+"</td><td>"+score.s+"</td></tr>";
 				if(score.s<gamescore) winscore=true;
 			}
 		}
 		cscores+="</table>";
-		if(cscores=="<table></table>") { cscores="There are not yet any high scores for this map"; winscore=true; }
+		if(cscores=="<table></table>") { cscores="There are not yet any high scores for this map"; }
+		if(ths<10) winscore=true;
+		if(gamescore===0) winscore=false;
 		var cont_action="getResource('sfxSelect').play(); playMenuMusic(); mainMenu();";
 		if(winscore) cont_action="getResource('sfxSelect').play(); newHiScore();";
 		document.getElementById("menus").innerHTML="<div class='msgblock'><span class='menutitle'>Highscores</span>Map name: "+mapstyle+mapsize+"<br>"+cscores+"<br>Your score: "+gamescore+"<br><a href='javascript: void(0)' onclick=\""+cont_action+"\" onmouseover=\"getResource('sfxHighlight').play();\" class='msgclink'>Continue</a></div>";
@@ -150,7 +159,7 @@ function updatesurvivegamemenu(a) {
 		elem2.innerHTML="<option value='arena'>Arena</option><option value='chase'>The Chase</option><option value='valleys'>Valleys</option>";
 		document.getElementById("mcshfscn").style.display="table-row";
 	} else {
-		elem2.innerHTML="<option value='colosseum'>Colosseum</option><option value='grand canyon'>Grand Canyon</option><option value='pyramid'>Pyramid</option><option value='snake valley'>Snake Valley</option><option value='two worlds'>Two Worlds</option>";
+		elem2.innerHTML="<option value='colosseum'>Colosseum</option><option value='grand canyon'>Grand Canyon</option><option value='pyramid'>Pyramid</option><option value='multispecial'>Ridges</option><option value='snake valley'>Snake Valley</option><option value='two worlds'>Two Worlds</option>";
 		document.getElementById("mcshfscn").style.display="none";
 	}
 	if(!a) updatesurvivemapname();
@@ -164,6 +173,7 @@ function updateMapDesc() {
 	if(map=='valleys') desc="Open mesas and plains with a few secluded spaces.";
 	if(map=='colosseum') desc="Small map - fight in the classical dungeon of gladiators!";
 	if(map=='pyramid') desc="Small map - watch your enemies run towards you in circles like Lemmings :)";
+	if(map=='multispecial') desc="Medium map with tricky valleys.";
 	if(map=='grand canyon') desc="Based on the real-world geography of the world-famous landmark.";
 	if(map=='snake valley') desc="Maze-like canyons can make these valleys deceptive and hard to navigate.";
 	if(map=='two worlds') desc="Small map - enemies will come at you from both left and right on this map.";
@@ -173,6 +183,7 @@ function updateMapDesc() {
 function startsurvivegame() {
 	mapstyle=document.getElementById("mcsmapname").value;
 	mapsize=parseInt(document.getElementById("mcsmapsize").value);
+	enemygen=true;
 	generateMap();
 	renderGameTiles();
 	createHealthbar();
@@ -181,14 +192,86 @@ function startsurvivegame() {
 	getResource("sfxStart").play();
 	playGameMusic();
 }
+tutorial=false;
 function campaigngame() {
+	mapstyle="tutorial"; enemygen=false; tutorial=true;
 	getResource('sfxSelect').play();
-	msgBox("This game mode is not yet available.","mainMenu()");
+	generateMap();
+	renderGameTiles();
+	createHealthbar();
+	gameStartTime=new Date().getTime();
+	createPlayer();
+	getResource("sfxStart").play();
+	playGameMusic();
+	startTutorialScript();
 }
+
+
+
+
+
+var _warpclient,donecxn=false,amplayingmulti=false,multiroomId;
 function multgame() {
 	getResource('sfxSelect').play();
-	msgBox("This game mode is not yet available.","mainMenu()");
+	if(donecxn) { _warpclient.getAllRooms(); return; }
+	document.getElementById("menus").innerHTML="<div class='msgblock'><span class='menutitle'>Multiplayer</span>Enter your screen name:<br><input id='hiscorename' maxlength='12' autocomplete='off'><br><a href='javascript: void(0)' onclick=\"getResource('sfxSelect').play(); multcxn();\" onmouseover=\"getResource('sfxHighlight').play();\" class='msgclink'>Connect</a><br><a href='javascript: void(0)' onclick=\"getResource('sfxBack').play(); playMenuMusic(); mainMenu();\" onmouseover=\"getResource('sfxHighlight').play();\" class='msgclink'>Back</a></div>";
+	document.getElementById("hiscorename").addEventListener("keypress",function (e) { var regex = new RegExp("^[a-zA-Z0-9]+$"); var str = String.fromCharCode(!e.charCode ? e.which : e.charCode); if (regex.test(str)) { return true; } e.preventDefault(); return false; });
+	document.getElementById("hiscorename").value=savedname;
 }
+function multcxn() {
+	savedname=document.getElementById("hiscorename").value;
+	document.getElementById("menus").innerHTML="<div class='msgblock'><span class='menutitle'>Connecting</span></div>";
+	AppWarp.WarpClient.initialize("9ddaa15aca7277917f49c9984fd8fc074152fd89844685943c2cc81ab3baa4e5", "c89792149bb73fdb7301c1618a94fa57414722e95cb82d69ba691b8022605677");
+	_warpclient = AppWarp.WarpClient.getInstance();
+	_warpclient.setResponseListener(AppWarp.Events.onConnectDone, monConnectDone);
+	_warpclient.setResponseListener(AppWarp.Events.onGetAllRoomsDone, monGetAllRoomsDone);
+	_warpclient.setResponseListener(AppWarp.Events.onGetLiveRoomInfoDone, monGetLiveRoomInfo);
+	_warpclient.setResponseListener(AppWarp.Events.onJoinRoomDone, monJoinRoomDone);
+	_warpclient.setResponseListener(AppWarp.Events.onCreateRoomDone, monCreateRoomDone);
+	_warpclient.setResponseListener(AppWarp.Events.onSubscribeRoomDone, monSubscribeRoomDone);
+	_warpclient.setResponseListener(AppWarp.Events.onLeaveRoomDone, monLeaveRoomDone);
+	_warpclient.setResponseListener(AppWarp.Events.onChatReceived, monTest);
+	_warpclient.setResponseListener(AppWarp.Events.onSendChatDone, monTest);
+	_warpclient.connect(savedname);
+}
+function monConnectDone(res) {
+	if(res != AppWarp.ResultCode.Success) msgBox("Connection Error","mainMenu()");
+	else { donecxn=true; _warpclient.getAllRooms(); }}
+function monGetAllRoomsDone(rooms) {
+	for(var i=0; i<rooms.getRoomIds().length; ++i) {
+		_warpclient.getLiveRoomInfo(rooms.getRoomIds()[i]);
+	}
+	document.getElementById("menus").innerHTML="<div class='msgblock'><span class='menutitle'>Join Room</span><div id='multiroomlist'></div><a href='javascript: void(0)' onclick=\"getResource('sfxSelect').play(); createmultiroom();\" onmouseover=\"getResource('sfxHighlight').play();\" class='msgclink'>Create Room</a><br><a href='javascript: void(0)' onclick=\"getResource('sfxBack').play(); mainMenu();\" onmouseover=\"getResource('sfxHighlight').play();\" class='msgclink'>Back</a></div>"; }
+function monGetLiveRoomInfo(room) {
+	document.getElementById("multiroomlist").innerHTML=document.getElementById("multiroomlist").innerHTML+"<a href='javascript: void(0)' onClick=\"joinRoom('"+room.getRoom().getRoomId()+"')\">" + room.getRoom().getName() + "</a><br>"; }
+function createmultiroom() {
+	document.getElementById("menus").innerHTML="<div class='msgblock'><span class='menutitle'>Create Room</span>Enter a room name:<br><input id='hiscorename' maxlength='12' autocomplete='off'><br><a href='javascript: void(0)' onclick=\"getResource('sfxSelect').play(); startRoom();\" onmouseover=\"getResource('sfxHighlight').play();\" class='msgclink'>Connect</a><br><a href='javascript: void(0)' onclick=\"getResource('sfxBack').play(); multgame();\" onmouseover=\"getResource('sfxHighlight').play();\" class='msgclink'>Back</a></div>";
+	document.getElementById("hiscorename").addEventListener("keypress",function (e) { var regex = new RegExp("^[a-zA-Z0-9]+$"); var str = String.fromCharCode(!e.charCode ? e.which : e.charCode); if (regex.test(str)) { return true; } e.preventDefault(); return false; }); }
+function startRoom() {
+	var roomname=document.getElementById("hiscorename").value;
+	document.getElementById("menus").innerHTML="<div class='msgblock'><span class='menutitle'>Connecting</span></div>";
+	_warpclient.createRoom(roomname,savedname,20,null); }
+function monCreateRoomDone(room) {
+	joinRoom(room.getName()); }
+function joinRoom(room) {
+	document.getElementById("menus").innerHTML="<div class='msgblock'><span class='menutitle'>Connecting</span></div>";
+	_warpclient.joinRoom(room); }
+function monJoinRoomDone(room) { if(room.getResult() != AppWarp.ResultCode.Success) console.log(room.getResult()); _warpclient.subscribeRoom(room.getRoomId()); multiroomId=room.getRoomId(); }
+function monLeaveRoomDone(room) { _warpclient.unsubscribeRoom(room.getRoomId()); }
+function monSubscribeRoomDone(room) {
+	_warpclient.setResponseListener(AppWarp.Events.onGetLiveRoomInfoDone, monTest);
+	_warpclient.getLiveRoomInfo(room.getRoomId());
+	hidemenus(); mapstyle="multispecial"; amplayingmulti=true; enemygen=false; generateMap();
+	renderGameTiles(); createHealthbar(); gameStartTime=new Date().getTime();
+	createPlayer(); getResource("sfxStart").play(); playGameMusic();
+	_warpclient.sendChat("HI "+savedname);
+	console.log("Room Sub Done "+savedname+" / " + room.getName());
+}
+function monTest(out) {
+	console.log(out);
+	_warpclient.setResponseListener(AppWarp.Events.onGetLiveRoomInfoDone, monGetLiveRoomInfo);
+}
+
 optInput='wasd'; optSfx=1.0; optMus=0.8;
 function options() {
 	getResource('sfxSelect').play();
@@ -227,13 +310,14 @@ function showmenus() {
 }
 
 onload=function() {
+	ap("<div id='bgimg' style='display: none;'></div>");
 	ap("<div id='menus'></div>");
 	ap("<div id='game'></div>");
 	loadGame();
 };
 
 function loadGame() {
-	var assetsLoaded=0, assetstotal=68; // remember to update the number of assets to load when changing this function
+	var assetsLoaded=0, assetstotal=74; // remember to update the number of assets to load when changing this function
 	document.getElementById("menus").innerHTML="<div class='msgblock'><div class='menutitle' style='color: #000;'>Loading</div><div id='loadbar' style='display: inline-block; width: 300px; height: 9px; border: 1px solid white; overflow: hidden'><div id='loadbarinner' style='width: 0; height: 9px; background-color: #fff;'></div></div></div>";
 	function startTheGame() { playMenuMusic(); mainMenu(); }
 	var assetCheck=function() {
@@ -267,6 +351,8 @@ function loadGame() {
 	pushasset("cactus3","50px/cactus.gif");
 	pushasset("cactus4","50px/grass.gif");
 	pushasset("walkerD","50px/edead.png");
+	pushasset("fattyD","50px/e2dead.png");
+	pushasset("jumpD","50px/e3dead.png");
 	pushasset("walkerWD","50px/walker_walkingD.gif");
 	pushasset("walkerWF","50px/walker_walkingF.gif");
 	pushasset("walkerWL","50px/walker_walkingL.gif");
@@ -292,6 +378,9 @@ function loadGame() {
 	pushasset("twmap","maps/twoworlds.gif");
 	pushasset("pymap","maps/pyramid.gif");
 	pushasset("gcmap","maps/grandcanyon.gif");
+	pushasset("multispecial","maps/multispecial.gif");
+	pushasset("tutorial","maps/tutorial.gif");
+	pushasset("flag","graphics/flag.gif");
 	on("scriptload",function(a) {
 		if(a=="pathing.js"||a=="howler.js") {
 			assetsLoaded++;
@@ -314,6 +403,7 @@ function loadGame() {
 				pushsound("sfxED","sounds/Enemy Death.mp3");
 				pushsound("sfxEV1","sounds/Enemy Voice 02.mp3");
 				pushsound("sfxEV2","sounds/Enemy Voice 03.mp3");
+				pushsound("sfxEH","sounds/Enemy Hit.mp3");
 				
 				pushmusic("musicIngame1","music/main-loop-sketch_1.0.mp3");
 				pushmusic("musicMenu","music/menu-sketch_2.0.mp3");
@@ -323,6 +413,7 @@ function loadGame() {
 		} }.bind(this));
 	loadjscssfile("pathing.js","js");
 	loadjscssfile("howler.js","js");
+	loadjscssfile("appwarp.min.js","js");
 }
 
 /*
@@ -341,6 +432,7 @@ tilesize=20;
 mapstyle="colosseum";
 isGameActive=false;
 pathfinder=false;
+enemygen=false;
 aStar={};
 
 musicPlaying=null;
@@ -361,13 +453,15 @@ function stopMusic() {
 
 function generateMap() {
 	pathfinder=new PF.Grid(mapsize, mapsize); var tempcanvas,tempctx,row,col;
-	if(mapstyle=="snake valley" || mapstyle=="colosseum" || mapstyle=="two worlds" || mapstyle=="grand canyon" || mapstyle=="pyramid") {
+	if(mapstyle=="snake valley" || mapstyle=="colosseum" || mapstyle=="two worlds" || mapstyle=="grand canyon" || mapstyle=="pyramid" || mapstyle=="multispecial" || mapstyle=="tutorial") {
 		var scenario;
 		if(mapstyle=="snake valley") scenario=getResource("svmap");
 		if(mapstyle=="colosseum") scenario=getResource("comap");
 		if(mapstyle=="two worlds") scenario=getResource("twmap");
 		if(mapstyle=="pyramid") scenario=getResource("pymap");
 		if(mapstyle=="grand canyon") scenario=getResource("gcmap");
+		if(mapstyle=="multispecial") scenario=getResource("multispecial");
+		if(mapstyle=="tutorial") scenario=getResource("tutorial");
 		tempcanvas = document.createElement('canvas');
 		tempcanvas.width = scenario.width;
 		tempcanvas.height = scenario.height;
@@ -377,7 +471,7 @@ function generateMap() {
 	}
 	for(row=0;row<mapsize;row++) {
 		for(col=0;col<mapsize;col++) {
-			if(mapstyle=="snake valley" || mapstyle=="colosseum" || mapstyle=="two worlds" || mapstyle=="grand canyon" || mapstyle=="pyramid") {
+			if(mapstyle=="snake valley" || mapstyle=="colosseum" || mapstyle=="two worlds" || mapstyle=="grand canyon" || mapstyle=="pyramid" || mapstyle=="multispecial" || mapstyle=="tutorial") {
 				if(tempctx.getImageData(row, col, 1, 1).data[0]>0) {
 					gamemap[row*mapsize+col]=1;
 					pathfinder.setWalkableAt(row, col, true);
@@ -391,7 +485,7 @@ function generateMap() {
 			pathfinder.setWalkableAt(row, col, false);
 		}
 	}
-	if(mapstyle=="snake valley" || mapstyle=="colosseum" || mapstyle=="two worlds" || mapstyle=="grand canyon" || mapstyle=="pyramid") return;
+	if(mapstyle=="snake valley" || mapstyle=="colosseum" || mapstyle=="two worlds" || mapstyle=="grand canyon" || mapstyle=="pyramid" || mapstyle=="multispecial" || mapstyle=="tutorial") return;
 	var halfmapsize=Math.round(mapsize/2);
 	var cpos;
 	function getX() { return cpos%mapsize; }
@@ -490,6 +584,7 @@ function renderGameTiles() {
 enemyCounter=0;
 activeEnemies=[];
 function spawnEnemyNearEdge(type) {
+	if(activeEnemies.length>=150) return;
 	var x,y,maxcount=0;
 	switch(Math.floor(Math.random()*4)+1) {
 		case 1:
@@ -587,18 +682,19 @@ enemyDamage = 1;
 // the last time the player was attacked
 playerLastAttacked = 0;
 // the amount of time the player is invulnerable for after being hit, in milliseconds
-playerInvulnTime = 500;
+playerInvulnTime = 400;
 function updateEnemies() {
 	var tickTime=pt();
 	for(var i = 0; i < activeEnemies.length; i++) {
 		var e=activeEnemies[i];
 		//attack logic is here
 		var time = pt();
-		if(e.closeEnoughToPlayer && time - playerLastAttacked > playerInvulnTime) {
+		if(e.closeEnoughToPlayer && Math.abs(e.x-playerX)<=20 && Math.abs(e.y-playerY)<=20 && time - playerLastAttacked > playerInvulnTime) {
 			//todo: play enemy attack animation
 			//todo: play player hurt animation
 			playerHealth -= enemyDamage;
 			playerLastAttacked = time;
+			getResource("sfxEH").play();
 		}
 		
 		if(e.nextPathingUpdate<=tickTime) { e=updateEnemyPath(e); e.nextPathingUpdate=tickTime+1500; activeEnemies[i]=e; }
@@ -607,10 +703,10 @@ function updateEnemies() {
 		var nextSpot=e.path[0]; var nxX=nextSpot[0],nxY=nextSpot[1],el=document.getElementById(e.id);
 		if(Math.abs(e.x-mappadding-nxX*tilesize)<=e.speed && Math.abs(e.y-mappadding-nxY*tilesize)<=e.speed) {
 			e.x=nxX*tilesize+mappadding; e.y=nxY*tilesize+mappadding; e.path.shift(); }
-		if(nxX*tilesize+mappadding>e.x) { e.x+=e.speed; el.style.backgroundImage = getEnemySpritePath(e.type,3); }
-		if(nxX*tilesize+mappadding<e.x) { e.x-=e.speed; el.style.backgroundImage = getEnemySpritePath(e.type,2); }
-		if(nxY*tilesize+mappadding>e.y) { e.y+=e.speed; el.style.backgroundImage = getEnemySpritePath(e.type,0); }
-		if(nxY*tilesize+mappadding<e.y) { e.y-=e.speed; el.style.backgroundImage = getEnemySpritePath(e.type,1); }
+		if(nxX*tilesize+mappadding>e.x) { e.x+=e.speed; el.style.backgroundImage = "url("+getEnemySpritePath(e.type,3)+")"; }
+		if(nxX*tilesize+mappadding<e.x) { e.x-=e.speed; el.style.backgroundImage = "url("+getEnemySpritePath(e.type,2)+")"; }
+		if(nxY*tilesize+mappadding>e.y) { e.y+=e.speed; el.style.backgroundImage = "url("+getEnemySpritePath(e.type,0)+")"; }
+		if(nxY*tilesize+mappadding<e.y) { e.y-=e.speed; el.style.backgroundImage = "url("+getEnemySpritePath(e.type,1)+")"; }
 		activeEnemies[i]=e;
 	}
 }
@@ -633,6 +729,51 @@ function spawnDeadEnemy(x,y) {
 	setTimeout(function() { clearInterval(doDeathAnimation); var elem=document.getElementById("deadEnemy"+deadEnemyNum); if(elem!==null) elem.parentNode.removeChild(elem); }.bind(this),2500);
 	deadEnemyCounter++;
 }
+function spawnDeadEnemy2(x,y) {
+	var deadEnemyNum=deadEnemyCounter; var cPos=0;
+	document.getElementById("gameinner2").insertAdjacentHTML('beforeend', "<div id='deadEnemy"+deadEnemyNum+"' style='left: "+x+"px; top: "+y+"px; z-index: "+y+"; width: "+tilesize+"px; height: "+tilesize+"px; position: absolute; background-image: url(50px/e2dead.png); background-size: 20px 384px; background-color: transparent; background-position: 0 0; background-repeat: no-repeat;'></div>");
+	var doDeathAnimation=setInterval(function(){
+		var elem=document.getElementById("deadEnemy"+deadEnemyNum); if(elem===null) return;
+		cPos++; if(cPos>15) return;
+		elem.style.backgroundPosition="0 -"+cPos*24+"px";
+	}.bind(this),75);
+	setTimeout(function() { clearInterval(doDeathAnimation); var elem=document.getElementById("deadEnemy"+deadEnemyNum); if(elem!==null) elem.parentNode.removeChild(elem); }.bind(this),2500);
+	deadEnemyCounter++;
+}
+function spawnDeadEnemy3(x,y) {
+	var deadEnemyNum=deadEnemyCounter; var cPos=0;
+	document.getElementById("gameinner2").insertAdjacentHTML('beforeend', "<div id='deadEnemy"+deadEnemyNum+"' style='left: "+x+"px; top: "+y+"px; z-index: "+y+"; width: "+tilesize+"px; height: "+tilesize+"px; position: absolute; background-image: url(50px/e3dead.png); background-size: 20px 360px; background-color: transparent; background-position: 0 0; background-repeat: no-repeat;'></div>");
+	var doDeathAnimation=setInterval(function(){
+		var elem=document.getElementById("deadEnemy"+deadEnemyNum); if(elem===null) return;
+		cPos++; if(cPos>16) return;
+		elem.style.backgroundPosition="0 -"+cPos*24+"px";
+	}.bind(this),75);
+	setTimeout(function() { clearInterval(doDeathAnimation); var elem=document.getElementById("deadEnemy"+deadEnemyNum); if(elem!==null) elem.parentNode.removeChild(elem); }.bind(this),2500);
+	deadEnemyCounter++;
+}
+
+
+
+
+activeOtherPlayers=[];
+
+function monChatReceived(chat) {
+	console.log("chat");
+	if(!amplayingmulti) return;
+	chat=chat.getChat();
+	console.log(chat);
+	chat=chat.split(" ");
+	switch(chat[0]) {
+		case "HI":
+			break;
+		case "SU":
+			break;
+	}
+}
+function broadcast() {
+	console.log("Sending: SU "+savedname+" "+playerX+" "+playerY+" "+playerDX+" "+playerDY+" "+playerSpeed+" "+playerHealth);
+	if(!amplayingmulti) return;
+	_warpclient.sendChat("SU "+savedname+" "+playerX+" "+playerY+" "+playerDX+" "+playerDY+" "+playerSpeed+" "+playerHealth); }
 
 var mappadding=2500;
 var playerX=0,playerY=0,playerDX=0,playerDY=0,playerSpeed=2, playerMaxHealth = 15, playerHealth = playerMaxHealth, gamescore=0;
@@ -662,17 +803,33 @@ document.onkeyup = checkKeyUp;
 function checkKeyDown(e) {
 	if(!isGameActive) return;
 	e = e || window.event;
+	if (e.keyCode == '27') {
+		isGameActive=false;
+		stopMusic();
+		if(amplayingmulti) _warpclient.leaveRoom(multiroomId);
+		if(getResource("sfxWind").playing()) getResource("sfxWind").stop();
+		if(getResource("sfxRustling").playing()) getResource("sfxRustling").stop();
+		getResource('sfxBack').play();
+		for(var i = 0; i < bullets.length; i++) destroyBullet(i);
+		for(i = 0; i < activeEnemies.length; i++) killEnemy(i);
+		activeEnemies=[]; bullets=[];
+		msgBox("Game over - you have quit the game manually.","postManualQuitSurvival()");
+		return;
+	}
+	if(tutorial_nobullets) return;
 	if(optInput=="arrow") {
 		if (e.keyCode == '38') playerDY=-1;
 		else if (e.keyCode == '40') playerDY=1;
 		else if (e.keyCode == '37') playerDX=-1;
 		else if (e.keyCode == '39') playerDX=1;
+		if(amplayingmulti) broadcast();
 	}
 	if(optInput=="wasd") {
 		if (e.keyCode == '87') playerDY=-1;
 		else if (e.keyCode == '83') playerDY=1;
 		else if (e.keyCode == '65') playerDX=-1;
 		else if (e.keyCode == '68') playerDX=1;
+		if(amplayingmulti) broadcast();
 	}
 }
 
@@ -682,10 +839,12 @@ function checkKeyUp(e) {
 	if(optInput=="arrow") {
 		if(e.keyCode == '38' || e.keyCode == '40') playerDY = 0;
 		else if(e.keyCode == '37' || e.keyCode == '39') playerDX = 0;
+		if(amplayingmulti) broadcast();
 	}
 	if(optInput=="wasd") {
 		if(e.keyCode == '87' || e.keyCode == '83') playerDY = 0;
 		else if(e.keyCode == '68' || e.keyCode == '65') playerDX = 0;
+		if(amplayingmulti) broadcast();
 	}
 }
 
@@ -698,6 +857,7 @@ function checkMouseDown(e) {
 
 bulletID = -1;
 function playerShootBullet(clickX, clickY) {
+	if(tutorial_nobullets) return;
 	bulletID++;
 	var centerX = window.innerWidth / 2;
 	var centerY = window.innerHeight / 2;
@@ -756,7 +916,9 @@ function updateBullets() {
 				gamescore+=1;
 				//todo play enemy hurt animation
 				if(e.health <= 0) {
-					spawnDeadEnemy(e.x,e.y);
+					if(e.type==1) spawnDeadEnemy(e.x,e.y);
+					if(e.type==2) spawnDeadEnemy2(e.x,e.y);
+					if(e.type==3) spawnDeadEnemy3(e.x,e.y);
 					gamescore+=19;
 					if(e.type==2) gamescore+=15;
 					else if(e.type==3) gamescore+=30;
@@ -782,6 +944,7 @@ function updateHealthbar() {
 function loseGame() {
 	isGameActive=false;
 	stopMusic();
+	if(amplayingmulti) _warpclient.leaveRoom(multiroomId);
 	if(getResource("sfxWind").playing()) getResource("sfxWind").stop();
 	if(getResource("sfxRustling").playing()) getResource("sfxRustling").stop();
 	getResource('sfxDeath').play();
@@ -789,6 +952,36 @@ function loseGame() {
 	for(i = 0; i < activeEnemies.length; i++) killEnemy(i);
 	activeEnemies=[]; bullets=[];
 	msgBox("Game over - you have been killed by radioactive mutants.","postSurvivalGame()");
+}
+tutorial_nobullets=false; tutorialStage=0;
+function startTutorialScript() {
+	tutorial_nobullets=true; tutorialStage=1;
+	msgBox("<div style='text-align:left'>Welcome to Contamination! Contamination is a game about killing mutants and surviving in a post-apocalyptic world. This tutorial will teach you how to play.<br><br>You can quit the tutorial, or any game, at any time by hitting ESCAPE.</div>","setTimeout(tuscr2,400); hidemenus(); tutorial_nobullets=false;");
+}
+function tuscr2() {
+	tutorial_nobullets=true; tutorialStage=2;
+	msgBox("<div style='text-align:left'>First, you need to know how to move around this hostile environment. To move, use the WASD or arrow keys on your keyboard. You can configure which one you want in your game settings.<br><br>Try moving your character to the red flag that just spawned to your left.</div>","hidemenus(); tutorial_nobullets=false;");
+	createGameObject(getResource("flag"), 31*tilesize, 27*tilesize-20,27*tilesize);
+}
+function tuscr3() {
+	tutorial_nobullets=true; tutorialStage=3;
+	msgBox("<div style='text-align:left'>Excellent. Now follow the trail of flags I have set up for you. Notice that you can't move on top of cliffs.</div>","hidemenus(); tutorial_nobullets=false;");
+	createGameObject(getResource("flag"), 36*tilesize, 30*tilesize-20,30*tilesize);
+	createGameObject(getResource("flag"), 30*tilesize, 34*tilesize-20,34*tilesize);
+	createGameObject(getResource("flag"), 23*tilesize, 33*tilesize-20,33*tilesize);
+	createGameObject(getResource("flag"), 16*tilesize, 31*tilesize-20,31*tilesize);
+}
+function tuscr4() {
+	tutorial_nobullets=true; tutorialStage=4;
+	msgBox("<div style='text-align:left'>It seems you have mastered the art of movement. However, you will need more than just running away if you want to survive in this world.<br><br> Therefore, you have a weapon available - your gun. To fire the gun, click with your mouse button towards the target you wish to shoot.<br><br>Try shooting the target I have set up to your left.</div>","hidemenus(); tutorial_nobullets=false;");
+}
+function updateTutorialScript() {
+	if(tutorialStage==2) {
+		if(Math.abs(playerX-3118)<10 && Math.abs(playerY-3052)<10) tuscr3();
+	}
+	if(tutorialStage==3) {
+		if(Math.abs(playerX-2820)<10 && Math.abs(playerY-3124)<10) tuscr4();
+	}
 }
 
 setInterval(function() {
@@ -805,11 +998,14 @@ setInterval(function() {
 	updateEnemies();
 	updateHealthbar();
 	playWindSounds();
-	if(Math.random()<0.0025+gamet()/13000000) spawnEnemyNearEdge(1);
-	if(mapstyle=="pyramid" && Math.random()<0.01+gamet()/13000000) spawnEnemyNearEdge(1);
-	if(Math.random()<-0.0015+gamet()/10000000) spawnEnemyNearEdge(2);
-	if(Math.random()<-0.004+gamet()/8000000) spawnEnemyNearEdge(3);
+	if(enemygen) {
+		if(Math.random()<0.0025+gamet()/26000000) spawnEnemyNearEdge(1);
+		if(mapstyle=="pyramid" && Math.random()<0.01+gamet()/26000000) spawnEnemyNearEdge(1);
+		if(Math.random()<-0.0015+gamet()/20000000) spawnEnemyNearEdge(2);
+		if(Math.random()<-0.006+gamet()/18000000) spawnEnemyNearEdge(3);
+	}
 	if(playerHealth <= 0) loseGame();
+	if(tutorial) updateTutorialScript();
 },15);
 
 doAnimations=function() {
