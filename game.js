@@ -191,6 +191,7 @@ function startsurvivegame() {
 	createPlayer();
 	getResource("sfxStart").play();
 	playGameMusic();
+	fallout = 0;
 }
 tutorial=false;
 function campaigngame() {
@@ -204,6 +205,7 @@ function campaigngame() {
 	getResource("sfxStart").play();
 	playGameMusic();
 	startTutorialScript();
+	fallout = 0;
 }
 
 
@@ -422,11 +424,14 @@ GAME
 
 */
 
+var fallout = 0;
+
 var bulletSpeed = 5;
 var bullets = [];
 var maxBullets = 50;
 
 gamemap=[];
+contammap=[];
 mapsize=150;
 tilesize=20;
 mapstyle="colosseum";
@@ -616,12 +621,12 @@ function spawnEnemyNearEdge(type) {
 				if(x<=mappadding) return; }
 			break;
 	}
-	var enemyspeed=playerSpeed*(Math.random()*0.5+0.4);
+	var enemyspeed=playerSpeed*(Math.random()*0.7+0.4)*((fallout+500)/1000);
 	if(type==2) enemyspeed=enemyspeed*0.45;
-	if(type==3) enemyspeed=playerSpeed*(Math.random()*0.4+0.8);
-	var enemyhealth=5;
-	if(type==2) enemyhealth=12;
-	if(type==3) enemyhealth=2;
+	if(type==3) enemyspeed=playerSpeed*(Math.random()*0.4+0.8)*((fallout+500)/1000);
+	var enemyhealth=5*((fallout+500)/1000);
+	if(type==2) enemyhealth=12*((fallout+500)/1000);
+	if(type==3) enemyhealth=2*((fallout+500)/1000);
 	activeEnemies.push({
 		id: "enemy"+enemyCounter,
 		closeEnoughToPlayer: false,
@@ -711,6 +716,21 @@ function updateEnemies() {
 	}
 }
 
+function contaminate(x, y, power) {
+	x-=mappadding; y-=mappadding;
+	x2=Math.floor((x+10)/tilesize); y2=Math.floor((y+12)/tilesize);
+	x=Math.floor((x+3)/tilesize); y=Math.floor((y+5)/tilesize);
+	contammap[x*mapsize+y]=1;
+	var context = document.getElementById('drawcanvas').getContext("2d");
+	context.drawImage(getResource(""), x*tilesize, y*tilesize);
+	if(power > 1) {
+		if(Math.random() < 0.25) contaminate(x+tilesize, y, power-1);
+		else if(Math.random() < 0.5) contaminate(x-tilesize, y, power-1);
+		else if(Math.random() < 0.75) contaminate(x, y+tilesize, power-1);
+		else contaminate(x-tilesize, y-tilesize, power-1);
+	}
+}
+
 function createGameObject(img,x,y,z) {
 	x+=mappadding;y+=mappadding;
 	if(typeof z==="undefined") z=y;
@@ -728,6 +748,7 @@ function spawnDeadEnemy(x,y) {
 	}.bind(this),75);
 	setTimeout(function() { clearInterval(doDeathAnimation); var elem=document.getElementById("deadEnemy"+deadEnemyNum); if(elem!==null) elem.parentNode.removeChild(elem); }.bind(this),2500);
 	deadEnemyCounter++;
+	contaminate(x, y, 3);
 }
 function spawnDeadEnemy2(x,y) {
 	var deadEnemyNum=deadEnemyCounter; var cPos=0;
@@ -739,6 +760,7 @@ function spawnDeadEnemy2(x,y) {
 	}.bind(this),75);
 	setTimeout(function() { clearInterval(doDeathAnimation); var elem=document.getElementById("deadEnemy"+deadEnemyNum); if(elem!==null) elem.parentNode.removeChild(elem); }.bind(this),2500);
 	deadEnemyCounter++;
+	contaminate(x, y, 6);
 }
 function spawnDeadEnemy3(x,y) {
 	var deadEnemyNum=deadEnemyCounter; var cPos=0;
@@ -750,6 +772,7 @@ function spawnDeadEnemy3(x,y) {
 	}.bind(this),75);
 	setTimeout(function() { clearInterval(doDeathAnimation); var elem=document.getElementById("deadEnemy"+deadEnemyNum); if(elem!==null) elem.parentNode.removeChild(elem); }.bind(this),2500);
 	deadEnemyCounter++;
+	contaminate(x, y, 2);
 }
 
 
@@ -786,7 +809,7 @@ function createPlayer() {
 
 function createHealthbar() {
 	playerHealth=playerMaxHealth;
-	document.getElementById("gameinner3").insertAdjacentHTML('afterbegin', "<div id='healthbarBackground' style='left: 4px; top: 4px; background-color: #FF0000; background-size: contain; width: 100px; height: 8px; position: absolute;'></div><div id='healthbar' style='left: 4px; top: 4px; background-color: #00FF00; background-size: contain; width: "+((playerHealth/playerMaxHealth)*100)+"px; height: 8px; position: absolute;'></div><p id='healthbarText' style='left: 4px; top: 4px; background-color: transparent; background-size: contain; width: 100px; height: 8px; position: absolute;'>Health: "+playerHealth+"/"+playerMaxHealth+"</p>");
+	document.getElementById("gameinner3").insertAdjacentHTML('afterbegin', "<div id='healthbarBackground' style='left: 4px; top: 4px; background-color: #FF0000; background-size: contain; width: 100px; height: 8px; position: absolute;'></div><div id='healthbar' style='left: 4px; top: 4px; background-color: #00FF00; background-size: contain; width: "+((playerHealth/playerMaxHealth)*100)+"px; height: 8px; position: absolute;'></div><p id='healthbarText' style='left: 4px; top: 4px; background-color: transparent; background-size: contain; width: 100px; height: 8px; position: absolute; text-align: left;'>Health: "+playerHealth+"/"+playerMaxHealth+"</p><p id='fallout' style='left: 4px; top: 20px; background-color: transparent; background-size: contain; width: 100px; height: 8px; position: absolute; text-align: left;'>Fallout: 0</p>");
 	document.getElementById("gameinner3").insertAdjacentHTML('afterbegin', "<div id='gamescore' style='right: 4px; top: 4px; position: absolute;'>Score: 0</div>");
 }
 
@@ -795,6 +818,13 @@ function canMove(x,y) {
 	x2=Math.floor((x+10)/tilesize); y2=Math.floor((y+12)/tilesize);
 	x=Math.floor((x+3)/tilesize); y=Math.floor((y+5)/tilesize);
 	return gamemap[x*mapsize+y]==1&&gamemap[x2*mapsize+y2]==1&&gamemap[x2*mapsize+y]==1&&gamemap[x*mapsize+y2]==1;
+}
+
+function inContaminatedSpace(x,y) {
+	x-=mappadding; y-=mappadding;
+	x2=Math.floor((x+10)/tilesize); y2=Math.floor((y+12)/tilesize);
+	x=Math.floor((x+3)/tilesize); y=Math.floor((y+5)/tilesize);
+	return contammap[x*mapsize+y]==1||contammap[x2*mapsize+y2]==1||contammap[x2*mapsize+y]==1||contammap[x*mapsize+y2]==1;
 }
 
 document.onmousedown = checkMouseDown;
@@ -872,6 +902,7 @@ function playerShootBullet(clickX, clickY) {
 	bullets.push(bullet);
 	createBullet(bullet);
 	getResource("sfxGun").play();
+	fallout+=0.25;
 }
 
 bulletSize = 2;
@@ -939,6 +970,7 @@ function updateHealthbar() {
 	document.getElementById('healthbar').style.width = (playerHealth/playerMaxHealth)*100+"px";
 	document.getElementById('healthbarText').innerHTML = "Health: "+playerHealth+"/"+playerMaxHealth;
 	document.getElementById('gamescore').innerHTML = "Score: "+gamescore;
+	document.getElementById('fallout').innerHTML = "Fallout: "+Math.round(fallout);
 }
 
 function loseGame() {
@@ -999,13 +1031,14 @@ setInterval(function() {
 	updateHealthbar();
 	playWindSounds();
 	if(enemygen) {
-		if(Math.random()<0.0025+gamet()/26000000) spawnEnemyNearEdge(1);
-		if(mapstyle=="pyramid" && Math.random()<0.01+gamet()/26000000) spawnEnemyNearEdge(1);
-		if(Math.random()<-0.0015+gamet()/20000000) spawnEnemyNearEdge(2);
-		if(Math.random()<-0.006+gamet()/18000000) spawnEnemyNearEdge(3);
+		if(Math.random()<0.0025+fallout/28000) spawnEnemyNearEdge(1);
+		if(mapstyle=="pyramid" && Math.random()<0.01+fallout/28000) spawnEnemyNearEdge(1);
+		if(Math.random()<-0.0015+fallout/21500) spawnEnemyNearEdge(2);
+		if(Math.random()<-0.006+fallout/20000) spawnEnemyNearEdge(3);
 	}
 	if(playerHealth <= 0) loseGame();
 	if(tutorial) updateTutorialScript();
+	fallout+=1/60;
 },15);
 
 doAnimations=function() {
