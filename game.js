@@ -317,7 +317,7 @@ onload=function() {
 };
 
 function loadGame() {
-	var assetsLoaded=0, assetstotal=74; // remember to update the number of assets to load when changing this function
+	var assetsLoaded=0, assetstotal=75; // remember to update the number of assets to load when changing this function
 	document.getElementById("menus").innerHTML="<div class='msgblock'><div class='menutitle' style='color: #000;'>Loading</div><div id='loadbar' style='display: inline-block; width: 300px; height: 9px; border: 1px solid white; overflow: hidden'><div id='loadbarinner' style='width: 0; height: 9px; background-color: #fff;'></div></div></div>";
 	function startTheGame() { playMenuMusic(); mainMenu(); }
 	var assetCheck=function() {
@@ -381,6 +381,7 @@ function loadGame() {
 	pushasset("multispecial","maps/multispecial.gif");
 	pushasset("tutorial","maps/tutorial.gif");
 	pushasset("flag","graphics/flag.gif");
+	pushasset("target","graphics/target.gif");
 	on("scriptload",function(a) {
 		if(a=="pathing.js"||a=="howler.js") {
 			assetsLoaded++;
@@ -583,6 +584,25 @@ function renderGameTiles() {
 }
 enemyCounter=0;
 activeEnemies=[];
+function spawnEnemy(type,x,y) {
+	var enemyspeed=playerSpeed*(Math.random()*0.5+0.4);
+	if(type==2) enemyspeed=enemyspeed*0.45;
+	if(type==3) enemyspeed=playerSpeed*(Math.random()*0.4+0.8);
+	if(type==4) enemyspeed=0;
+	var enemyhealth=5;
+	if(type==2) enemyhealth=12;
+	if(type==3) enemyhealth=2;
+	if(type==4) enemyhealth=1;
+	activeEnemies.push({
+		id: "enemy"+enemyCounter,
+		closeEnoughToPlayer: false,
+		nextPathingUpdate: -9999999999,
+		x:x, y:y, speed: enemyspeed,
+		health:enemyhealth,maxhealth:enemyhealth, path:[], type:type
+	});
+	document.getElementById("gameinner2").insertAdjacentHTML('beforeend', "<div class='enemy' id='enemy"+enemyCounter+"' style='left: "+x+"px; top: "+y+"px; z-index: "+y+"; position: absolute; width: 20px; height: 20px; background-color: transparent; background-size: contain; background-image: url("+getEnemySpritePath(type,0)+"); overflow: visible;'><div class='ehpbar' id='enemy"+enemyCounter+"h' style='width: 20px; height: 2px; background-color: #F00; position: absolute; top: -4px; display: none;'><div id='enemy"+enemyCounter+"hi' style='width: 20px; height: 2px; background-color: #0F0; position: absolute;'></div></div></div>");
+	enemyCounter++;
+}
 function spawnEnemyNearEdge(type) {
 	if(activeEnemies.length>=150) return;
 	var x,y,maxcount=0;
@@ -616,21 +636,7 @@ function spawnEnemyNearEdge(type) {
 				if(x<=mappadding) return; }
 			break;
 	}
-	var enemyspeed=playerSpeed*(Math.random()*0.5+0.4);
-	if(type==2) enemyspeed=enemyspeed*0.45;
-	if(type==3) enemyspeed=playerSpeed*(Math.random()*0.4+0.8);
-	var enemyhealth=5;
-	if(type==2) enemyhealth=12;
-	if(type==3) enemyhealth=2;
-	activeEnemies.push({
-		id: "enemy"+enemyCounter,
-		closeEnoughToPlayer: false,
-		nextPathingUpdate: -9999999999,
-		x:x, y:y, speed: enemyspeed,
-		health:enemyhealth,maxhealth:enemyhealth, path:[], type:type
-	});
-	document.getElementById("gameinner2").insertAdjacentHTML('beforeend', "<div class='enemy' id='enemy"+enemyCounter+"' style='left: "+x+"px; top: "+y+"px; z-index: "+y+"; position: absolute; width: 20px; height: 20px; background-color: transparent; background-size: contain; background-image: url("+getEnemySpritePath(type,0)+"); overflow: visible;'><div class='ehpbar' id='enemy"+enemyCounter+"h' style='width: 20px; height: 2px; background-color: #F00; position: absolute; top: -4px; display: none;'><div id='enemy"+enemyCounter+"hi' style='width: 20px; height: 2px; background-color: #0F0; position: absolute;'></div></div></div>");
-	enemyCounter++;
+	spawnEnemy(type,x,y);
 }
 function getEnemySpritePath(type, direction) {
 	switch(type) {
@@ -658,6 +664,7 @@ function getEnemySpritePath(type, direction) {
 				case 3: return "50px/jumper_JumpR.gif";
 				default:  break;
 			} break;
+		case 4: return "graphics/target.gif"
 	}
 }
 function updateEnemyPath(e) {
@@ -687,6 +694,7 @@ function updateEnemies() {
 	var tickTime=pt();
 	for(var i = 0; i < activeEnemies.length; i++) {
 		var e=activeEnemies[i];
+		if(e.speed===0) continue;
 		//attack logic is here
 		var time = pt();
 		if(e.closeEnoughToPlayer && Math.abs(e.x-playerX)<=20 && Math.abs(e.y-playerY)<=20 && time - playerLastAttacked > playerInvulnTime) {
@@ -974,6 +982,11 @@ function tuscr3() {
 function tuscr4() {
 	tutorial_nobullets=true; tutorialStage=4;
 	msgBox("<div style='text-align:left'>It seems you have mastered the art of movement. However, you will need more than just running away if you want to survive in this world.<br><br> Therefore, you have a weapon available - your gun. To fire the gun, click with your mouse button towards the target you wish to shoot.<br><br>Try shooting the target I have set up to your left.</div>","hidemenus(); tutorial_nobullets=false;");
+	spawnEnemy(4, 11*tilesize+mappadding, 32*tilesize+mappadding);
+}
+function tuscr5() {
+	tutorial_nobullets=true; tutorialStage=5;
+	msgBox("<div style='text-align:left'>Great job. Of course, a real enemy will be more dangerous than some dummy target. Enemies walk towards you - and if they get close enough, they will attack and cause you to lose health. You can check your current health and score the top of the screen.<br><br>Attack the spawned alien.</div>","hidemenus(); tutorial_nobullets=false; spawnEnemy(1, 9*tilesize+mappadding, 35*tilesize+mappadding);");
 }
 function updateTutorialScript() {
 	if(tutorialStage==2) {
@@ -981,6 +994,9 @@ function updateTutorialScript() {
 	}
 	if(tutorialStage==3) {
 		if(Math.abs(playerX-2820)<10 && Math.abs(playerY-3124)<10) tuscr4();
+	}
+	if(tutorialStage==4) {
+		if(activeEnemies.length===0) tuscr5();
 	}
 }
 
