@@ -58,6 +58,12 @@ html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; text-align: 
 select {
 	padding: 4px 12px;
 }
+#hiscorename {
+	padding: 9px; width: 400px;
+	margin: 6px; text-align: center;
+	font-size: 33px;
+	font-family: 'I.F.C. LOS BANDITOS';
+}
 .menublock table {
 	text-align: left;
 	border: 0;
