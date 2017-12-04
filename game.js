@@ -2,18 +2,6 @@
 
 /*
 
-TODO:
-> Reduce gain: wind, highlight
-
-
-
-
-
-
-
-
-
-
 GENERAL UTILITY FUNCTIONS
 
 */
@@ -78,7 +66,7 @@ MENU
 function mainMenu() {
 	amplayingmulti=false; enemygen=true; tutorial=false;
 	document.getElementById("bgimg").style.display="block";
-	document.getElementById("menus").innerHTML="<div class='menublock'><a href='javascript: void(0)' onclick='survivegame()'>Survival Mode</a><a href='javascript: void(0)' onclick='campaigngame()'>Tutorial</a><a href='javascript: void(0)' onclick='options()'>Options</a><a href='javascript: void(0)' onclick='credits()'>Credits</a></div>";
+	document.getElementById("menus").innerHTML="<div class='menublock'><span class='menutitle' style='font-size:47px;color: #000'>Contamination</span><a href='javascript: void(0)' onclick='survivegame()'>Survival Mode</a><a href='javascript: void(0)' onclick='campaigngame()'>Tutorial</a><a href='javascript: void(0)' onclick='options()'>Options</a><a href='javascript: void(0)' onclick='credits()'>Credits</a></div>";
 	setLinksHighlights();//<a href='javascript: void(0)' onclick='multgame()'>Multiplayer</a>
 }
 function setLinksHighlights() {
@@ -295,9 +283,12 @@ function setMusVol(x) {
 	}
 	getResource("musicGun").play();
 }
+incredits=false;
 function credits() {
+	incredits=true; creditspos=600;
 	getResource('sfxSelect').play();
-	msgBox("The credits are not yet available.","mainMenu()");
+	document.getElementById("menus").innerHTML="";
+	document.getElementById("game").innerHTML="<div id='gameinner'><div id='credits' style=\"position: absolute; top: 0; width: 50%; height: 100%; margin-left: 25%; background-color: rgba(255,255,255,0.5); color: #000; font-weight: bold; font-family: 'I.F.C. LOS BANDITOS';\"><div id='creditsinner' style='position: absolute; top: 600px; width: 100%;'><span class='menutitle'>Contamination</span><br><br>Team 7 Sinful Saints<br>=============<br><br>PROJECT LEAD<br>Larz<br><br>DESIGN<br>NemoGG<br>Sour<br><br>PROGRAMMING<br>Larz<br>Sour<br><br>ART<br>Sybatron<br>Larz<br><br>SOUND<br>Cloudjumper<br>Auvenil<br>Larz<br><br>SUPPORT<br>AcNuker<br><br><br>Special Thanks<br>=============<br><br>LD40 Submission Logo<br>Dave Roddick<br><br>Font: Los Banditos<br>Anton Krylov</div></div></div>";
 }
 function hidemenus() {
 	document.getElementById("menus").innerHTML="";
@@ -313,7 +304,7 @@ onload=function() {
 	ap("<div id='bgimg' style='display: none;'></div>");
 	ap("<div id='menus'></div>");
 	ap("<div id='game'></div>");
-	loadGame();
+	loadGame(); requestAnimationFrame(doAnimations);
 };
 
 function loadGame() {
@@ -828,7 +819,7 @@ function createPlayer() {
 	if(!canMove(playerX,playerY)) { while(!canMove(playerX,playerY)) { playerX+=tilesize; } }
 	document.getElementById("gameinner2").insertAdjacentHTML('afterbegin', "<div id='playerAvatar' style='left: "+playerX+"px; top: "+playerY+"px; background-color: transparent; background-image: url(graphics/playermd.gif); background-size: contain; width: "+tilesize+"px; height: "+tilesize+"px; position: absolute;'></div>");
 	document.getElementById("bgimg").style.display="none";
-	hidemenus(); isGameActive=true; requestAnimationFrame(doAnimations);
+	hidemenus(); isGameActive=true;
 }
 
 function createHealthbar() {
@@ -855,6 +846,12 @@ document.onmousedown = checkMouseDown;
 document.onkeydown = checkKeyDown;
 document.onkeyup = checkKeyUp;
 function checkKeyDown(e) {
+	if(incredits) {
+		incredits=false;
+		document.getElementById("game").innerHTML="";
+		mainMenu();
+		return;
+	}
 	if(!isGameActive) return;
 	e = e || window.event;
 	if (e.keyCode == '27') {
@@ -1062,8 +1059,9 @@ function updateTutorialScript() {
 		if(activeEnemies.length===0) tuscr9();
 	}
 }
-
+creditspos=600;
 setInterval(function() {
+	creditspos-=0.5;
 	if(!isGameActive) return;
 	if(canMove(playerX+playerDX*playerSpeed,playerY+playerDY*playerSpeed)) {
 		contamFactor = 1;
@@ -1091,7 +1089,11 @@ setInterval(function() {
 },15);
 
 doAnimations=function() {
-	if(!isGameActive) return;
+	if(incredits) {
+		if(creditspos+document.getElementById("creditsinner").offsetHeight<0) creditspos=600;
+		document.getElementById("creditsinner").style.top=parseInt(creditspos)+"px";
+	}
+	if(!isGameActive) { requestAnimationFrame(doAnimations); return;}
 	for(var i = 0; i < bullets.length; i++) {
 		document.getElementById('bullet'+bullets[i].bulletid).style.left = bullets[i].x+"px";
 		document.getElementById('bullet'+bullets[i].bulletid).style.top = bullets[i].y+"px";

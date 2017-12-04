@@ -1,6 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
+<!DOCTYPE html><html lang="en"><head>
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <title>LD40 - Team7</title>
@@ -12,11 +10,16 @@ html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; text-align: 
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	overflow: hidden;
 	width: 100%;
 	height: 100%;
 	-moz-user-select: none; -webkit-user-select: none; -ms-user-select:none; user-select:none;-o-user-select:none;
 	z-index: 10000000000000;
 	font-family: Arial;
+}
+#bgimg {
+	position: absolute; left: 50%; top: 50%; margin-left: -400px; width: 800px; margin-top: -300px; height: 600px; overflow: hidden;
+	background-image: url('graphics/BG.gif');
 }
 .menublock {
 	width: 300px;
@@ -64,6 +67,11 @@ select {
 	font-size: 33px;
 	font-family: 'I.F.C. LOS BANDITOS';
 }
+#multiroomlist {
+	width: 400px; padding: 12px; overflow-y: scroll;
+	display: inline-block; margin: 12px; height: 250px;
+	text-align: left;
+}
 .menublock table {
 	text-align: left;
 	border: 0;
@@ -84,7 +92,6 @@ select {
 }
 </style>
 </head>
-<body oncontextmenu="return false;" unselectable="on" onselectstart="return false;">
+<body oncontextmenu="return false;" unselectable="on" onselectstart="return false;" cz-shortcut-listen="true">
 <script src="game.js?v=1"></script>
-</body>
-</html>
+</body></html>
