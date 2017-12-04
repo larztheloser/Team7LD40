@@ -1083,6 +1083,16 @@ setInterval(function() {
 		if(Math.random()<-0.0015+fallout/21500) spawnEnemyNearEdge(2);
 		if(Math.random()<-0.006+fallout/20000) spawnEnemyNearEdge(3);
 	}
+	
+	if(inContaminatedSpace(playerX, playerY)) {
+		var time = pt();
+		if(time - playerLastAttacked > playerInvulnTime) {
+			playerHealth -= 0.5;
+			playerLastAttacked = time;
+			getResource("sfxEH").play();
+		}
+	}
+	
 	if(playerHealth <= 0) loseGame();
 	if(tutorial) updateTutorialScript();
 	fallout+=1/60;
