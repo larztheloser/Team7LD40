@@ -2,6 +2,18 @@
 
 /*
 
+TODO:
+> Reduce gain: wind, highlight
+
+
+
+
+
+
+
+
+
+
 GENERAL UTILITY FUNCTIONS
 
 */
@@ -65,27 +77,69 @@ MENU
 
 function mainMenu() {
 	document.getElementById("menus").innerHTML="<div class='menublock'><a href='javascript: void(0)' onclick='survivegame()'>Survival Mode</a><a href='javascript: void(0)' onclick='campaigngame()'>Campaign</a><a href='javascript: void(0)' onclick='multgame()'>Multiplayer</a><a href='javascript: void(0)' onclick='options()'>Options</a><a href='javascript: void(0)' onclick='credits()'>Credits</a></div>";
+	setLinksHighlights();
+}
+function setLinksHighlights() {
+	var links = document.querySelectorAll('.menublock>a'), i;
+	for (i = 0; i < links.length; ++i) {
+		links[i].addEventListener("mouseover",function() { getResource("sfxHighlight").play(); });
+	}
 }
 function msgBox(txt,fwd) {
 	showmenus();
-	document.getElementById("menus").innerHTML="<div class='msgblock'>"+txt+"<br><a href='javascript: void(0)' onclick=\"getResource('sfxSelect').play();"+fwd+"\" class='msgclink'>Continue</a></div>";
+	document.getElementById("menus").innerHTML="<div class='msgblock'>"+txt+"<br><a href='javascript: void(0)' onmouseover=\"getResource('sfxHighlight').play();\" onclick=\"getResource('sfxSelect').play();"+fwd+"\" class='msgclink'>Continue</a></div>";
 }
 prevSurviveMapTypeSelection="r";
 prevSurviveMapSelection="arena";
 prevSurviveMapSizeSelection="150";
 function postSurvivalGame() {
 	document.getElementById("game").innerHTML="";
-	playMenuMusic();
-	mainMenu();
+	document.getElementById("menus").innerHTML="<div class='msgblock'><span class='menutitle'>Loading - Please Wait</span></div>";
+	ajax("leaderboard.php?m="+mapstyle+mapsize);
 }
+on("ajaxDone",function(v) {
+	if(v[0].substring(0,17)=="leaderboard.php?s") {
+		document.getElementById("menus").innerHTML="<div class='msgblock'><span class='menutitle'>Highscore Submitted</span>Thank you for playing!<br><a href='javascript: void(0)' onclick=\"getResource('sfxSelect').play(); playMenuMusic(); mainMenu();\" onmouseover=\"getResource('sfxHighlight').play();\" class='msgclink'>Continue</a></div>";
+	} else if(v[0].substring(0,17)=="leaderboard.php?m") {
+		var parsed = JSON.parse(v[1]);
+		var cscores="<table>";
+		var winscore=false;
+		for(var key in parsed) {
+			if(parsed.hasOwnProperty(key)) {
+				var score=p[key];
+				cscores+="<tr><td>"+score.n+"</td><td>"+score.s+"</td></tr>";
+				if(score.s<gamescore) winscore=true;
+			}
+		}
+		cscores+="</table>";
+		if(cscores=="<table></table>") { cscores="There are not yet any high scores for this map"; winscore=true; }
+		var cont_action="getResource('sfxSelect').play(); playMenuMusic(); mainMenu();";
+		if(winscore) cont_action="getResource('sfxSelect').play(); newHiScore();";
+		document.getElementById("menus").innerHTML="<div class='msgblock'><span class='menutitle'>Highscores</span>Map name: "+mapstyle+mapsize+"<br>"+cscores+"<br>Your score: "+gamescore+"<br><a href='javascript: void(0)' onclick=\""+cont_action+"\" onmouseover=\"getResource('sfxHighlight').play();\" class='msgclink'>Continue</a></div>";
+	}
+});
+savedname="";
+function newHiScore() {
+	document.getElementById("menus").innerHTML="<div class='msgblock'><span class='menutitle'>New High Score</span>Enter your name to submit your high score:<br><input id='hiscorename' maxlength='12' autocomplete='off'><br><a href='javascript: void(0)' onclick=\"getResource('sfxSelect').play(); submitscore();\" onmouseover=\"getResource('sfxHighlight').play();\" class='msgclink'>Submit High Score!</a><br><a href='javascript: void(0)' onclick=\"getResource('sfxSelect').play(); playMenuMusic(); mainMenu();\" onmouseover=\"getResource('sfxHighlight').play();\" class='msgclink'>Ignore</a></div>";
+	document.getElementById("hiscorename").addEventListener("keypress",function (e) { var regex = new RegExp("^[a-zA-Z0-9]+$"); var str = String.fromCharCode(!e.charCode ? e.which : e.charCode); if (regex.test(str)) { return true; } e.preventDefault(); return false; });
+	document.getElementById("hiscorename").value=savedname;
+}
+function submitscore() {
+	savedname=document.getElementById("hiscorename").value;
+	ajax("leaderboard.php?s="+gamescore+"&n="+savedname+"&m="+mapstyle+mapsize);
+	document.getElementById("menus").innerHTML="<div class='msgblock'><span class='menutitle'>Submitting High Score...</span></div>";
+}
+
+
 function survivegame() {
 	getResource('sfxSelect').play();
-	document.getElementById("menus").innerHTML="<div class='menublock'><span class='menutitle'>Setup Game</span><table><tr><td style='width: 100px;'><label for='mcsgametype'>Game Type:</label></td><td><select onchange='updatesurvivegamemenu(false)' id='mcsgametype'><option value='r' selected>Random Map</option><option value='s'>Scenario</option></select></td></tr><tr><td><label for='mcsmapname'>Map Name:</label></td><td><select id='mcsmapname' onchange='updatesurvivemapname()'></select></td></tr><tr><td colspan=2 id='mapdesc' style='font-size: 11px; height: 30px;'></td></tr><tr id='mcshfscn'><td><label for='mcsmapsize'>Map Size:</label></td><td><select id='mcsmapsize' onchange='updatesurvivemapsize()'><option value='45'>Small</option><option value='100'>Medium</option><option value='150'>Large</option></select></td></tr></table><a href='javascript: void(0)' onclick=\"getResource('sfxBack').play();mainMenu()\">Back</a><a href='javascript: void(0)' onclick='startsurvivegame()'>PLAY</a></div>";
+	document.getElementById("menus").innerHTML="<div class='menublock'><span class='menutitle'>Setup Game</span><table><tr><td style='width: 100px;'><label for='mcsgametype'>Game Type:</label></td><td><select onchange='updatesurvivegamemenu(false)' onclick=\"getResource('sfxHighlight').play();\" id='mcsgametype'><option value='r' selected>Random Map</option><option value='s'>Scenario</option></select></td></tr><tr><td><label for='mcsmapname'>Map Name:</label></td><td><select id='mcsmapname' onclick=\"getResource('sfxHighlight').play();\" onchange='updatesurvivemapname()'></select></td></tr><tr><td colspan=2 id='mapdesc' style='font-size: 11px; height: 30px;'></td></tr><tr id='mcshfscn'><td><label for='mcsmapsize'>Map Size:</label></td><td><select id='mcsmapsize' onclick=\"getResource('sfxHighlight').play();\" onchange='updatesurvivemapsize()'><option value='45'>Small</option><option value='100'>Medium</option><option value='150'>Large</option></select></td></tr></table><a href='javascript: void(0)' onclick=\"getResource('sfxBack').play();mainMenu()\">Back</a><a href='javascript: void(0)' onclick='startsurvivegame()'>PLAY</a></div>";
 	document.getElementById("mcsgametype").value=prevSurviveMapTypeSelection;
 	updatesurvivegamemenu(true);
 	document.getElementById("mcsmapname").value=prevSurviveMapSelection;
 	updateMapDesc();
 	document.getElementById("mcsmapsize").value=prevSurviveMapSizeSelection;
+	setLinksHighlights();
 }
 function updatesurvivegamemenu(a) {
 	var elem=document.getElementById("mcsgametype");
@@ -135,12 +189,14 @@ function multgame() {
 	getResource('sfxSelect').play();
 	msgBox("This game mode is not yet available.","mainMenu()");
 }
-optInput='wasd'; optSfx=1.0; optMus=1.0;
+optInput='wasd'; optSfx=1.0; optMus=0.8;
 function options() {
 	getResource('sfxSelect').play();
-	document.getElementById("menus").innerHTML="<div class='menublock'><span class='menutitle'>Options</span><table><tr><td style='width: 100px;'><label for='optinput'>Movement:</label></td><td><select id='optinput' onchange='optInput=this.value;'><option value='arrow'>Arrow Keys</option><option value='wasd'>WASD Keys</option></select></td></tr><tr><td style='width: 100px;'><label for='sfxslider'>SFX Volume:</label></td><td><input id=\"sfxslider\" onchange=\"setSfxVol(this.value)\" type=\"range\" min=\"0.0\" max=\"1.0\" step =\"0.05\" value=\"1.0\"></td></tr><tr><td style='width: 100px;'><label for='musslider'>Music Volume:</label></td><td><input id=\"musslider\" onchange=\"setMusVol(this.value)\" type=\"range\" min=\"0.0\" max=\"1.0\" step =\"0.05\" value=\"0.8\"></td></tr></table><a href='javascript: void(0)' onclick=\"getResource('sfxBack').play();mainMenu()\">Back</a></div>";
+	document.getElementById("menus").innerHTML="<div class='menublock'><span class='menutitle'>Options</span><table><tr><td style='width: 100px;'><label for='optinput'>Movement:</label></td><td><select id='optinput' onclick=\"getResource('sfxHighlight').play();\" onchange='optInput=this.value;'><option value='arrow'>Arrow Keys</option><option value='wasd'>WASD Keys</option></select></td></tr><tr><td style='width: 100px;'><label for='sfxslider'>SFX Volume:</label></td><td><input id=\"sfxslider\" onchange=\"setSfxVol(this.value)\" type=\"range\" min=\"0.0\" max=\"1.0\" step =\"0.05\" value=\"1.0\"></td></tr><tr><td style='width: 100px;'><label for='musslider'>Music Volume:</label></td><td><input id=\"musslider\" onchange=\"setMusVol(this.value)\" type=\"range\" min=\"0.0\" max=\"1.0\" step =\"0.05\" value=\"0.8\"></td></tr></table><a href='javascript: void(0)' onclick=\"getResource('sfxBack').play();mainMenu()\">Back</a></div>";
 	document.getElementById("optinput").value=optInput;
 	document.getElementById("sfxslider").value=optSfx;
+	document.getElementById("musslider").value=optMus;
+	setLinksHighlights();
 }
 function setSfxVol(x) {
 	optSfx=x;
@@ -177,7 +233,7 @@ onload=function() {
 };
 
 function loadGame() {
-	var assetsLoaded=0, assetstotal=53; // remember to update the number of assets to load when changing this function
+	var assetsLoaded=0, assetstotal=68; // remember to update the number of assets to load when changing this function
 	document.getElementById("menus").innerHTML="<div class='msgblock'><div class='menutitle' style='color: #000;'>Loading</div><div id='loadbar' style='display: inline-block; width: 300px; height: 9px; border: 1px solid white; overflow: hidden'><div id='loadbarinner' style='width: 0; height: 9px; background-color: #fff;'></div></div></div>";
 	function startTheGame() { playMenuMusic(); mainMenu(); }
 	var assetCheck=function() {
@@ -224,10 +280,13 @@ function loadGame() {
 	pushasset("jumpL","50px/jumper_JumpL.gif");
 	pushasset("jumpR","50px/jumper_JumpR.gif");
 	pushasset("rocks","graphics/rocks.gif");
+	pushasset("tree","graphics/deadtree.gif");
 	pushasset("grave","graphics/grave.gif");
 	pushasset("windmill","graphics/windmill.gif");
 	pushasset("watertower","graphics/watertower.gif");
 	pushasset("skeleton","graphics/skeleton.gif");
+	pushasset("crack","graphics/crack.gif");
+	pushasset("sign","graphics/sign.gif");
 	pushasset("svmap","maps/snakevalley.gif");
 	pushasset("comap","maps/colosseum.gif");
 	pushasset("twmap","maps/twoworlds.gif");
@@ -240,11 +299,21 @@ function loadGame() {
 			if(assetsLoaded==assetstotal) startTheGame();
 			if(a=="howler.js") {
 				var pushsound=function(name,path) { var to=new Howl({src:[path],onload:function() { addResource(name,to); assetCheck(); }.bind(this)}); };
-				var pushmusic=function(name,path) { var to=new Howl({src:[path],onload:function() { addResource(name,to); }.bind(this), html5:true, loop:true, volume: 0.8}); };
+				var pushmusic=function(name,path) { var to=new Howl({src:[path],onload:function() { addResource(name,to); assetCheck(); }.bind(this), html5:true, loop:true, volume: 0.8}); };
 				pushsound("sfxGun","sounds/Gun.mp3");
 				pushsound("sfxStart","sounds/Start.mp3");
 				pushsound("sfxSelect","sounds/Select.mp3");
 				pushsound("sfxBack","sounds/Back.mp3");
+				pushsound("sfxWind","sounds/Wind.mp3?v=2");
+				pushsound("sfxRustling","sounds/Rustling.mp3");
+				pushsound("sfxHawk","sounds/Hawk.mp3");
+				pushsound("sfxHighlight","sounds/Highlight.mp3?v=2");
+				pushsound("sfxDeath","sounds/Death.mp3");
+				pushsound("sfxHit","sounds/Hit.mp3");
+				pushsound("sfxWall","sounds/Wall Bullet.mp3?v=2");
+				pushsound("sfxED","sounds/Enemy Death.mp3");
+				pushsound("sfxEV1","sounds/Enemy Voice 02.mp3");
+				pushsound("sfxEV2","sounds/Enemy Voice 03.mp3");
 				
 				pushmusic("musicIngame1","music/main-loop-sketch_1.0.mp3");
 				pushmusic("musicMenu","music/menu-sketch_2.0.mp3");
@@ -408,8 +477,11 @@ function renderGameTiles() {
 			if(Math.random()<0.003 && gp(row,col)) context.drawImage(getResource("rocks"), row*tilesize, col*tilesize);
 			if(Math.random()<0.003 && gp(row,col)) context.drawImage(getResource("cactus4"), row*tilesize, col*tilesize, 20, 20);
 			if(Math.random()<0.002 && gp(row,col)) context.drawImage(getResource("cactus3"), row*tilesize, col*tilesize, 20, 20);
+			if(Math.random()<0.0015 && gp(row,col)) context.drawImage(getResource("crack"), row*tilesize, col*tilesize, 20, 20);
 			if(Math.random()<0.0012 && gp(row,col)) context.drawImage(getResource("grave"), row*tilesize, col*tilesize);
+			if(Math.random()<0.0009 && gp(row,col)) createGameObject(getResource("tree"), row*tilesize, col*tilesize-20,col*tilesize);
 			if(Math.random()<0.0008 && gp(row,col)) context.drawImage(getResource("skeleton"), row*tilesize, col*tilesize);
+			if(Math.random()<0.0008 && gp(row,col)) createGameObject(getResource("sign"), row*tilesize, col*tilesize);
 			if(Math.random()<0.0005 && gp(row,col)) createGameObject(getResource("windmill"), row*tilesize, col*tilesize-20,col*tilesize);
 			if(Math.random()<0.0005 && gp(row,col)) createGameObject(getResource("watertower"), row*tilesize, col*tilesize-20,col*tilesize);
 		}
@@ -505,7 +577,12 @@ function updateEnemyPath(e) {
 	}
 	return e; 
 }
-
+function playWindSounds() {
+	if(getResource("sfxWind").playing() || getResource("sfxRustling").playing()) return;
+	if(Math.random()<0.008) { getResource("sfxWind").play(); return; }
+	if(Math.random()<0.005) { getResource("sfxRustling").play(); return; }
+	if(Math.random()<0.005) { getResource("sfxHawk").play(); return; }
+}
 enemyDamage = 1;
 // the last time the player was attacked
 playerLastAttacked = 0;
@@ -665,6 +742,7 @@ function updateBullets() {
 	for(var i = 0; i < bullets.length; i++) {
 		if(bullets[i].killtimer<timecheck-5000 || !canBulletPass(bullets[i].x,bullets[i].y)) {
 			destroyBullet(i);
+			getResource("sfxWall").play();
 			continue; }
 		bullets[i].x += bullets[i].dx * bulletSpeed;
 		bullets[i].y += bullets[i].dy * bulletSpeed;
@@ -674,6 +752,7 @@ function updateBullets() {
 			if(bullets[i].x > e.x && bullets[i].x < e.x + 20 && bullets[i].y > e.y && bullets[i].y < e.y + 20) {
 				e.health -= 1;
 				document.getElementById(e.id+"h").style.display="block";
+				getResource("sfxWall").play();
 				gamescore+=1;
 				//todo play enemy hurt animation
 				if(e.health <= 0) {
@@ -682,6 +761,10 @@ function updateBullets() {
 					if(e.type==2) gamescore+=15;
 					else if(e.type==3) gamescore+=30;
 					killEnemy(en);
+					if(Math.random()<0.5) getResource("sfxEV1").play();
+					else getResource("sfxEV2").play();
+				} else {
+					getResource("sfxED").play();
 				}
 				destroyBullet(i);
 				continue;
@@ -697,7 +780,11 @@ function updateHealthbar() {
 }
 
 function loseGame() {
-	isGameActive=false; stopMusic();
+	isGameActive=false;
+	stopMusic();
+	if(getResource("sfxWind").playing()) getResource("sfxWind").stop();
+	if(getResource("sfxRustling").playing()) getResource("sfxRustling").stop();
+	getResource('sfxDeath').play();
 	for(var i = 0; i < bullets.length; i++) destroyBullet(i);
 	for(i = 0; i < activeEnemies.length; i++) killEnemy(i);
 	activeEnemies=[]; bullets=[];
@@ -717,6 +804,7 @@ setInterval(function() {
 	updateBullets();
 	updateEnemies();
 	updateHealthbar();
+	playWindSounds();
 	if(Math.random()<0.0025+gamet()/13000000) spawnEnemyNearEdge(1);
 	if(mapstyle=="pyramid" && Math.random()<0.01+gamet()/13000000) spawnEnemyNearEdge(1);
 	if(Math.random()<-0.0015+gamet()/10000000) spawnEnemyNearEdge(2);
