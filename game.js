@@ -288,7 +288,7 @@ function credits() {
 	incredits=true; creditspos=600;
 	getResource('sfxSelect').play();
 	document.getElementById("menus").innerHTML="";
-	document.getElementById("game").innerHTML="<div id='gameinner'><div id='credits' style=\"position: absolute; top: 0; width: 50%; height: 100%; margin-left: 25%; background-color: rgba(255,255,255,0.5); color: #000; font-weight: bold; font-family: 'I.F.C. LOS BANDITOS';\"><div id='creditsinner' style='position: absolute; top: 600px; width: 100%;'><span class='menutitle'>Contamination</span><br><br>Team 7 Sinful Saints<br>=============<br><br>PROJECT LEAD<br>Larz<br><br>DESIGN<br>NemoGG<br>Sour<br><br>PROGRAMMING<br>Larz<br>Sour<br><br>ART<br>Sybatron<br>Larz<br><br>SOUND<br>Cloudjumper<br>Auvenil<br>Larz<br><br>SUPPORT<br>AcNuker<br><br><br>Special Thanks<br>=============<br><br>LD40 Submission Logo<br>Dave Roddick<br><br>Font: Los Banditos<br>Anton Krylov</div></div></div>";
+	document.getElementById("game").innerHTML="<div id='gameinner'><div id='credits' style=\"position: absolute; top: 0; width: 50%; height: 100%; margin-left: 25%; background-color: rgba(255,255,255,0.5); color: #000; font-weight: bold; font-family: 'I.F.C. LOS BANDITOS';\"><div id='creditsinner' style='position: absolute; top: 600px; width: 100%;'><span class='menutitle'>Contamination</span><br><br>Team 7 Sinful Saints<br>=============<br><br>PROJECT LEAD<br>Larz<br><br>DESIGN<br>NemoGG<br>Sour<br><br>PROGRAMMING<br>Larz<br>Sour<br><br>ART<br>Sybatron<br>Larz<br><br>SOUND<br>Cloudjumper<br>Auvenil<br><br>SUPPORT<br>AcNuker<br><br><br>Special Thanks<br>=============<br><br>LD40 Submission Logo<br>Dave Roddick<br><br>Font: Los Banditos<br>Anton Krylov</div></div></div>";
 }
 function hidemenus() {
 	document.getElementById("menus").innerHTML="";
@@ -308,7 +308,7 @@ onload=function() {
 };
 
 function loadGame() {
-	var assetsLoaded=0, assetstotal=76; // remember to update the number of assets to load when changing this function
+	var assetsLoaded=0, assetstotal=86; // remember to update the number of assets to load when changing this function
 	document.getElementById("menus").innerHTML="<div class='msgblock'><div class='menutitle' style='color: #000;'>Loading</div><div id='loadbar' style='display: inline-block; width: 300px; height: 9px; border: 1px solid white; overflow: hidden'><div id='loadbarinner' style='width: 0; height: 9px; background-color: #fff;'></div></div></div>";
 	function startTheGame() { playMenuMusic(); mainMenu(); }
 	var assetCheck=function() {
@@ -373,6 +373,13 @@ function loadGame() {
 	pushasset("tutorial","maps/tutorial.gif");
 	pushasset("flag","graphics/flag.gif");
 	pushasset("target","graphics/target.gif");
+	
+	pushasset("turret","graphics/turret.gif");
+	pushasset("treasure","graphics/treasure.gif");
+	pushasset("medic","graphics/medic.gif");
+	pushasset("medal","graphics/medal.gif");
+	pushasset("plasma","graphics/plasma.gif");
+	
 	pushasset("radiation","graphics/radiation.png");
 	on("scriptload",function(a) {
 		if(a=="pathing.js"||a=="howler.js") {
@@ -397,6 +404,12 @@ function loadGame() {
 				pushsound("sfxEV1","sounds/Enemy Voice 02.mp3");
 				pushsound("sfxEV2","sounds/Enemy Voice 03.mp3");
 				pushsound("sfxEH","sounds/Enemy Hit.mp3");
+				
+				pushsound("sfxHealth","sounds/Health.mp3");
+				pushsound("sfxMetal","sounds/Metal.mp3");
+				pushsound("sfxMetal","sounds/Metal.mp3");
+				pushsound("sfxTurret","sounds/Turret Drop.mp3");
+				pushsound("sfxPlasma","sounds/Enemy Gun.mp3");
 				
 				pushmusic("musicIngame1","music/main-loop-sketch_1.0.mp3");
 				pushmusic("musicMenu","music/menu-sketch_2.0.mp3");
@@ -578,7 +591,68 @@ function renderGameTiles() {
 	}
 }
 enemyCounter=0;
+dropCounter=0;
+turretCounter=0;
+activeDrops=[];
+activeTurrets=[];
 activeEnemies=[];
+activeTurrets=[];
+function spawnDroppable(type,x,y) {
+	activeDrops.push({
+		id: "drop"+dropCounter,type:type,x:x,y:y
+	});
+	document.getElementById("gameinner2").insertAdjacentHTML('beforeend', "<div class='droppable' id='drop"+dropCounter+"' style='left: "+x+"px; top: "+y+"px; z-index: "+y+"; position: absolute; width: 20px; height: 20px; background-color: transparent; background-size: contain; background-image: url("+getDropSpritePath(type)+"); overflow: visible;'></div>");
+	dropCounter++;
+}
+function spawnTurret(x,y) {
+	var tu=setInterval("doTurret("+turretCounter+")",900);
+	activeTurrets.push({
+		id: "turret"+turretCounter,x:x,y:y,tu:tu
+	});
+	document.getElementById("gameinner2").insertAdjacentHTML('beforeend', "<div class='turret' id='turret"+turretCounter+"' style='left: "+x+"px; top: "+y+"px; z-index: "+y+"; position: absolute; width: 20px; height: 20px; background-color: transparent; background-size: contain; background-image: url(graphics/turret.gif); overflow: visible;'></div>");
+	turretCounter++;
+}
+function doTurret(id) {
+	function distance(x,y,x2,y2) { return Math.sqrt((Math.pow(x2-x,2))+(Math.pow(y2-y,2))); }
+	var minD=100000;
+	var enemyX=-1, enemyY=-1;
+	for(var i = 0; i < activeEnemies.length; i++) {
+		var d=distance(activeTurrets[id].x,activeTurrets[id].y,activeEnemies[i].x,activeEnemies[i].y);
+		if(d<minD) {
+			minD=d;
+			enemyX=activeEnemies[i].x;
+			enemyY=activeEnemies[i].y;
+		}
+	}
+	if(minD>200) return;
+	bulletID++;
+	centerX=activeTurrets[id].x;
+	centerY=activeTurrets[id].y;
+	var angle = Math.atan2(enemyY - centerY, enemyX - centerX);
+	var bulletDY = Math.sin(angle);
+	var bulletDX = Math.cos(angle);
+	if(bullets.length >= maxBullets) { 
+		document.getElementById('bullet'+bullets[0].bulletid).html = "";
+		bullets.shift(); }
+	bullet = {x:activeTurrets[id].x+tilesize/2, y:activeTurrets[id].y+tilesize/2, dx:bulletDX, dy:bulletDY, bulletid:bulletID, killtimer:pt(), plasma:false};
+	bullets.push(bullet);
+	createBullet(bullet);
+	getResource("sfxGun").play();
+	fallout+=0.25;
+}
+function hasTurret(x,y) {
+	var check=false;
+	for(var i = 0; i < activeTurrets.length; i++) {
+		if(x>=activeTurrets[i].x && x<=activeTurrets[i].x-20 && y>=activeTurrets[i].y && y<=activeTurrets[i].y-20) check=true;
+	}
+	return check;
+}
+function getDropSpritePath(type) {
+	if(type===0) return "50px/metal_depot.gif";
+	if(type===1) return "graphics/medal.gif";
+	if(type===2) return "graphics/medic.gif";
+	if(type===3) return "graphics/treasure.gif";
+}
 function spawnEnemy(type,x,y) {
 	var enemyspeed=playerSpeed*(Math.random()*0.5+0.4);
 	if(type==2) enemyspeed=enemyspeed*0.45;
@@ -733,6 +807,7 @@ function contaminate(x, y, power) {
 	x-=mappadding; y-=mappadding;
 	x2=Math.floor((x+10)/tilesize); y2=Math.floor((y+12)/tilesize);
 	x=Math.floor((x+3)/tilesize); y=Math.floor((y+5)/tilesize);
+	if(x<1 || y<1 || x>mapsize-2 || y>mapsize-2) return;
 	contammap[x*mapsize+y]=1;
 	var context = document.getElementById('drawcanvas').getContext("2d");
 	context.drawImage(getResource("radiation"), x*tilesize, y*tilesize);
@@ -789,9 +864,6 @@ function spawnDeadEnemy3(x,y) {
 	contaminate(x, y, 2);
 }
 
-
-
-
 activeOtherPlayers=[];
 
 function monChatReceived(chat) {
@@ -815,7 +887,7 @@ function broadcast() {
 var mappadding=2500;
 var playerX=0,playerY=0,playerDX=0,playerDY=0,playerSpeed=2, playerMaxHealth = 15, playerHealth = playerMaxHealth, gamescore=0;
 function createPlayer() {
-	playerX=Math.floor(mapsize/2)*tilesize+mappadding; playerY=Math.floor(mapsize/2)*tilesize+mappadding; gamescore=0;
+	playerX=Math.floor(mapsize/2)*tilesize+mappadding; playerY=Math.floor(mapsize/2)*tilesize+mappadding; gamescore=0; metalTotal=0; metalNeeded=20; plasmaActive=false;
 	if(!canMove(playerX,playerY)) { while(!canMove(playerX,playerY)) { playerX+=tilesize; } }
 	document.getElementById("gameinner2").insertAdjacentHTML('afterbegin', "<div id='playerAvatar' style='left: "+playerX+"px; top: "+playerY+"px; background-color: transparent; background-image: url(graphics/playermd.gif); background-size: contain; width: "+tilesize+"px; height: "+tilesize+"px; position: absolute;'></div>");
 	document.getElementById("bgimg").style.display="none";
@@ -824,7 +896,7 @@ function createPlayer() {
 
 function createHealthbar() {
 	playerHealth=playerMaxHealth;
-	document.getElementById("gameinner3").insertAdjacentHTML('afterbegin', "<div id='healthbarBackground' style='left: 4px; top: 4px; background-color: #FF0000; background-size: contain; width: 100px; height: 8px; position: absolute;'></div><div id='healthbar' style='left: 4px; top: 4px; background-color: #00FF00; background-size: contain; width: "+((playerHealth/playerMaxHealth)*100)+"px; height: 8px; position: absolute;'></div><p id='healthbarText' style='left: 4px; top: 4px; background-color: transparent; background-size: contain; width: 100px; height: 8px; position: absolute; text-align: left;'>Health: "+playerHealth+"/"+playerMaxHealth+"</p><p id='fallout' style='left: 4px; top: 20px; background-color: transparent; background-size: contain; width: 100px; height: 8px; position: absolute; text-align: left;'>Fallout: 0</p>");
+	document.getElementById("gameinner3").insertAdjacentHTML('afterbegin', "<div id='healthbarBackground' style='left: 4px; top: 4px; background-color: #FF0000; background-size: contain; width: 100px; height: 8px; position: absolute;'></div><div id='healthbar' style='left: 4px; top: 4px; background-color: #00FF00; background-size: contain; width: "+((playerHealth/playerMaxHealth)*100)+"px; height: 8px; position: absolute;'></div><p id='healthbarText' style='left: 4px; top: 4px; background-color: transparent; background-size: contain; width: 100px; height: 8px; position: absolute; text-align: left;'>Health: "+playerHealth+"/"+playerMaxHealth+"</p><p id='fallout' style='left: 4px; top: 23px; background-color: transparent; background-size: contain; width: 100px; height: 8px; position: absolute; text-align: left;'>Fallout: 0</p><p id='metal' style='left: 4px; top: 40px; background-color: transparent; background-size: contain; width: 100px; height: 8px; position: absolute; text-align: left;'>Metal: 0</p>");
 	document.getElementById("gameinner3").insertAdjacentHTML('afterbegin', "<div id='gamescore' style='right: 4px; top: 4px; position: absolute;'>Score: 0</div>");
 }
 
@@ -837,7 +909,8 @@ function canMove(x,y) {
 
 function inContaminatedSpace(x,y) {
 	x-=mappadding; y-=mappadding;
-	x2=Math.floor((x+10)/tilesize); y2=Math.floor((y+12)/tilesize);
+	x2=Math.floor((x+10)/tilesize);
+	y2=Math.floor((y+12)/tilesize);
 	x=Math.floor((x+3)/tilesize); y=Math.floor((y+5)/tilesize);
 	return contammap[x*mapsize+y]==1||contammap[x2*mapsize+y2]==1||contammap[x2*mapsize+y]==1||contammap[x*mapsize+y2]==1;
 }
@@ -845,6 +918,21 @@ function inContaminatedSpace(x,y) {
 document.onmousedown = checkMouseDown;
 document.onkeydown = checkKeyDown;
 document.onkeyup = checkKeyUp;
+function endTutorial() {
+	isGameActive=false;
+	stopMusic();
+	if(amplayingmulti) _warpclient.leaveRoom(multiroomId);
+	if(getResource("sfxWind").playing()) getResource("sfxWind").stop();
+	if(getResource("sfxRustling").playing()) getResource("sfxRustling").stop();
+	getResource('sfxBack').play();
+	for(var i = 0; i < bullets.length; i++) destroyBullet(i);
+	for(i = 0; i < activeEnemies.length; i++) killEnemy(i);
+	for(i = 0; i < activeDrops.length; i++) pickup(i);
+	for(i = 0; i < activeTurrets.length; i++) clearTurret(i);
+	activeEnemies=[]; bullets=[]; activeDrops=[]; activeTurrets=[];
+	showmenus();
+	postManualQuitSurvival();
+}
 function checkKeyDown(e) {
 	if(incredits) {
 		incredits=false;
@@ -854,19 +942,7 @@ function checkKeyDown(e) {
 	}
 	if(!isGameActive) return;
 	e = e || window.event;
-	if (e.keyCode == '27') {
-		isGameActive=false;
-		stopMusic();
-		if(amplayingmulti) _warpclient.leaveRoom(multiroomId);
-		if(getResource("sfxWind").playing()) getResource("sfxWind").stop();
-		if(getResource("sfxRustling").playing()) getResource("sfxRustling").stop();
-		getResource('sfxBack').play();
-		for(var i = 0; i < bullets.length; i++) destroyBullet(i);
-		for(i = 0; i < activeEnemies.length; i++) killEnemy(i);
-		activeEnemies=[]; bullets=[];
-		msgBox("Game over - you have quit the game manually.","postManualQuitSurvival()");
-		return;
-	}
+	if (e.keyCode == '27') { endTutorial(); return; }
 	if(tutorial_nobullets) return;
 	if(optInput=="arrow") {
 		if (e.keyCode == '38') playerDY=-1;
@@ -882,7 +958,18 @@ function checkKeyDown(e) {
 		else if (e.keyCode == '68') playerDX=1;
 		if(amplayingmulti) broadcast();
 	}
+	if (e.keyCode == '84' && metalTotal>=metalNeeded && !hasTurret(playerX,playerY)) { //T = spawn turret
+		payMetalCost(); getResource("sfxTurret").play();
+		spawnTurret(playerX,playerY);
+		return;
+	}
+	if (e.keyCode == '89' && metalTotal>=metalNeeded) { //Y = shoot plasma
+		payMetalCost();
+		plasmaActive=true;
+		return;
+	}
 }
+plasmaActive=false;
 
 function checkKeyUp(e) {
 	if(!isGameActive) return;
@@ -917,18 +1004,19 @@ function playerShootBullet(clickX, clickY) {
 	var bulletDX = Math.cos(angle);
 	if(bullets.length >= maxBullets) { 
 		document.getElementById('bullet'+bullets[0].bulletid).html = "";
-		bullets.shift();
-	}
-	bullet = {x:playerX+tilesize/2, y:playerY+tilesize/2, dx:bulletDX, dy:bulletDY, bulletid:bulletID, killtimer:pt()};
+		bullets.shift(); }
+	bullet = {x:playerX+tilesize/2, y:playerY+tilesize/2, dx:bulletDX, dy:bulletDY, bulletid:bulletID, killtimer:pt(), plasma:plasmaActive};
 	bullets.push(bullet);
 	createBullet(bullet);
-	getResource("sfxGun").play();
-	fallout+=0.25;
+	if(plasmaActive) getResource("sfxPlasma").play();
+	else getResource("sfxGun").play();
+	fallout+=0.25; plasmaActive=false;
 }
 
 bulletSize = 2;
 function createBullet(bullet) {
-	document.getElementById("gameinner2").insertAdjacentHTML('afterbegin', "<div id='bullet"+bullet.bulletid+"' style='left: "+bullet.x+"px; top: "+bullet.y+"px; background-color: #000000; background-size: contain; width: "+bulletSize+"px; height: "+bulletSize+"px; position: absolute;'></div>");
+	if(!bullet.plasma) document.getElementById("gameinner2").insertAdjacentHTML('afterbegin', "<div id='bullet"+bullet.bulletid+"' style='left: "+bullet.x+"px; top: "+bullet.y+"px; background-color: #000000; background-size: contain; width: "+bulletSize+"px; height: "+bulletSize+"px; position: absolute;'></div>");
+	else document.getElementById("gameinner2").insertAdjacentHTML('afterbegin', "<div id='bullet"+bullet.bulletid+"' style=\"left: "+bullet.x+"px; top: "+bullet.y+"px; background-color: transparent; background-image: url('graphics/plasma.gif'); background-size: contain; width: 5px; height: 5px; position: absolute;\"></div>");
 }
 
 function destroyBullet(i) {
@@ -943,6 +1031,23 @@ function killEnemy(en) {
 	activeEnemies.splice(en, 1);
 }
 
+function clearTurret(en) {
+	var elem = document.getElementById(activeTurrets[en].id);
+	if(elem!==null) elem.parentNode.removeChild(elem);
+	clearInterval(activeTurrets[en].tu);
+	activeTurrets.splice(en, 1);
+}
+
+metalTotal=0; metalNeeded=20;
+function pickup(en) {
+	if(activeDrops[en].type==0) { metalTotal++; getResource("sfxMetal").play(); } 
+	if(activeDrops[en].type==1) { gamescore+=200; getResource("sfxScore").play(); }
+	if(activeDrops[en].type==2) { playerHealth+=Math.round(Math.random()*2+1); if(playerHealth>playerMaxHealth) playerHealth=playerMaxHealth; getResource("sfxHealth").play(); }
+	if(activeDrops[en].type==3) { gamescore+=500; getResource("sfxScore").play(); }
+	var elem = document.getElementById(activeDrops[en].id);
+	if(elem!==null) elem.parentNode.removeChild(elem);
+	activeDrops.splice(en, 1); }
+
 function canBulletPass(x,y) {
 	x-=mappadding; y-=mappadding;
 	x=Math.floor(x/tilesize); y=Math.floor(y/tilesize);
@@ -952,7 +1057,7 @@ function canBulletPass(x,y) {
 function updateBullets() {
 	var timecheck=pt()-5000;
 	for(var i = 0; i < bullets.length; i++) {
-		if(bullets[i].killtimer<timecheck-5000 || !canBulletPass(bullets[i].x,bullets[i].y)) {
+		if(bullets[i].killtimer<timecheck-5000 || (!canBulletPass(bullets[i].x,bullets[i].y) && !bullets[i].plasma)) {
 			destroyBullet(i);
 			getResource("sfxWall").play();
 			continue; }
@@ -962,11 +1067,11 @@ function updateBullets() {
 			var e = activeEnemies[en];
 			if(typeof bullets[i]=="undefined" || typeof e=="undefined") continue;
 			if(bullets[i].x > e.x && bullets[i].x < e.x + 20 && bullets[i].y > e.y && bullets[i].y < e.y + 20) {
-				e.health -= 1;
+				if(!bullets[i].plasma) e.health -= 1;
+				else e.health -= 10;
 				document.getElementById(e.id+"h").style.display="block";
 				getResource("sfxWall").play();
 				gamescore+=1;
-				//todo play enemy hurt animation
 				if(e.health <= 0) {
 					if(e.type==1) spawnDeadEnemy(e.x,e.y);
 					if(e.type==2) spawnDeadEnemy2(e.x,e.y);
@@ -974,13 +1079,20 @@ function updateBullets() {
 					gamescore+=19;
 					if(e.type==2) gamescore+=15;
 					else if(e.type==3) gamescore+=30;
+					if(!tutorial) {
+						if(Math.random()<0.15) spawnDroppable(0,e.x,e.y);
+						else if(Math.random()<0.05) spawnDroppable(1,e.x,e.y);
+						else if(Math.random()<0.025) spawnDroppable(2,e.x,e.y);
+						else if(Math.random()<0.025) spawnDroppable(3,e.x,e.y);
+					} else if(tutorialStage==14) { spawnDroppable(0,e.x,e.y); }
+					else if(tutorialStage==23) { spawnDroppable(0,e.x,e.y); }
 					killEnemy(en);
 					if(Math.random()<0.5) getResource("sfxEV1").play();
 					else getResource("sfxEV2").play();
 				} else {
 					getResource("sfxED").play();
 				}
-				destroyBullet(i);
+				if(!bullets[i].plasma) destroyBullet(i);
 				continue;
 			}
 		}
@@ -992,7 +1104,9 @@ function updateHealthbar() {
 	document.getElementById('healthbarText').innerHTML = "Health: "+playerHealth+"/"+playerMaxHealth;
 	document.getElementById('gamescore').innerHTML = "Score: "+gamescore;
 	document.getElementById('fallout').innerHTML = "Fallout: "+Math.round(fallout);
+	document.getElementById('metal').innerHTML = "Metal: "+Math.round(metalTotal)+"/"+Math.round(metalNeeded);
 }
+function payMetalCost() { metalTotal-=metalNeeded; metalNeeded=metalNeeded*2; }
 
 function loseGame() {
 	isGameActive=false;
@@ -1003,12 +1117,14 @@ function loseGame() {
 	getResource('sfxDeath').play();
 	for(var i = 0; i < bullets.length; i++) destroyBullet(i);
 	for(i = 0; i < activeEnemies.length; i++) killEnemy(i);
-	activeEnemies=[]; bullets=[];
+	for(i = 0; i < activeDrops.length; i++) pickup(i);
+	for(i = 0; i < activeTurrets.length; i++) clearTurret(i);
+	activeEnemies=[]; bullets=[]; activeDrops=[]; activeTurrets=[];
 	msgBox("Game over - you have been killed by radioactive mutants.","postSurvivalGame()");
 }
 tutorial_nobullets=false; tutorialStage=0;
 function startTutorialScript() {
-	tutorial_nobullets=true; tutorialStage=1;
+	tutorial_nobullets=true; tutorialStage=1; metalNeeded=7;
 	msgBox("<div style='text-align:left'>Welcome to Contamination! Contamination is a game about killing mutants and surviving in a post-apocalyptic world. This tutorial will teach you how to play.<br><br>You can quit the tutorial, or any game, at any time by hitting ESCAPE.</div>","setTimeout(tuscr2,400); hidemenus(); tutorial_nobullets=false;");
 }
 function tuscr2() {
@@ -1041,7 +1157,54 @@ function tuscr9() {
 	tutorial_nobullets=true; tutorialStage=9;
 	msgBox("<div style='text-align:left'>Looks like they won't be bothering us any more! There are also other types of enemies in the game, with different strengths and weaknesses. Try shooting two different types of enemies.</div>","hidemenus(); tutorial_nobullets=false; tutorialStage=10; spawnEnemy(2, 9*tilesize+mappadding, 35*tilesize+mappadding); spawnEnemy(3, 9*tilesize+mappadding, 36*tilesize+mappadding);");
 }
-
+function tuscr11() {
+	tutorial_nobullets=true; tutorialStage=11;
+	msgBox("<div style='text-align:left'>Shooting, and a little bit of time, increases your fallout ... and more fallout means harder enemies.<br><br>The contamination left behind by your fallen enemies will also slow you down.<br><br>I'll bet with all that attacking, there's lots more enemies spawned around the map. Take the passage to the north to take a look.</div>","hidemenus(); tutorial_nobullets=false;"); }
+function tuscr12() {
+	tutorial_nobullets=true; tutorialStage=13;
+	msgBox("<div style='text-align:left'>See, this valley is full of them!</div>","hidemenus(); tutorial_nobullets=false; tutorialStage=14; spawnEnemy(2, 3160, 2680); spawnEnemy(2, 3180, 2680); spawnEnemy(2, 3180, 2700); spawnEnemy(2, 3160, 2700); spawnEnemy(1, 3200, 2700); spawnEnemy(1, 3180, 2720); spawnEnemy(2, 3160, 2720);"); }
+function tuscr15() {
+	tutorial_nobullets=true; tutorialStage=15;
+	msgBox("<div style='text-align:left'>Sometimes, enemies can drop some useful items. Items might give you things like extra score or health.<br><br>In this case, each of the mutants has dropped a pile of metal. Pick up all the metal piles by moving on to them.</div>","hidemenus(); tutorial_nobullets=false; tutorialStage=16;"); }
+function tuscr17() {
+	tutorial_nobullets=true; tutorialStage=17;
+	msgBox("<div style='text-align:left'>You can check your current metal stock on your screen to the top left. When the number on the left beside metal exceeds the number to the right, you have sufficient metal to use a power. Usually you'd need at least 20 metal for a power, but in this tutorial you can do it with just 7. Let's build a turret. Press the T key to place a turret in your current location.</div>","hidemenus(); tutorial_nobullets=false; tutorialStage=18;"); }
+function tuscr19() {
+	tutorial_nobullets=true; tutorialStage=19;
+	msgBox("<div style='text-align:left'>Awesome, your turret is looking good! Notice how your metal cost goes up every time you use a power.<br><br>I think I hear some more enemies coming. Use your turret to help you fight them! Turrets shoot bullets automatically at enemies for you.</div>","hidemenus(); tutorial_nobullets=false; tutorialStage=20; spawnEnemy(3, 3000, 2615); spawnEnemy(1, 3020, 2615); spawnEnemy(2, 3000, 2635); spawnEnemy(2, 3020, 2635); spawnEnemy(3, 3000, 2655); spawnEnemy(1, 3020, 2655);"); }
+function tuscr21() {
+	tutorial_nobullets=true; tutorialStage=21;
+	msgBox("<div style='text-align:left'>You and your turret seem to have made short work of those mutants. Let's continue to follow this path and see where it leads.</div>","hidemenus(); tutorial_nobullets=false;"); }
+function tuscr22() {
+	tutorial_nobullets=true; tutorialStage=22;
+	msgBox("<div style='text-align:left'>Look! More mutants!</div>","hidemenus(); tutorial_nobullets=false; tuspawnlots(); tutorialStage=23;"); }
+function tuspawnlots() {
+	spawnEnemy(1, 2590, 2720); spawnEnemy(2, 2590, 2720); spawnEnemy(3, 2590, 2720);
+	spawnEnemy(1, 2610, 2720); spawnEnemy(2, 2610, 2720); spawnEnemy(3, 2610, 2720);
+	spawnEnemy(1, 2570, 2720); spawnEnemy(2, 2570, 2720); spawnEnemy(3, 2570, 2720);
+	spawnEnemy(1, 2590, 2700); spawnEnemy(2, 2590, 2700); spawnEnemy(3, 2590, 2700);
+	spawnEnemy(1, 2610, 2700); spawnEnemy(2, 2610, 2700); spawnEnemy(3, 2610, 2700);
+	spawnEnemy(1, 2570, 2700); spawnEnemy(2, 2570, 2700); spawnEnemy(3, 2570, 2700);
+}
+function tuscr24() {
+	tutorial_nobullets=true; tutorialStage=24;
+	msgBox("<div style='text-align:left'>Wow, check out all the metal. Would be a shame if nobody picked it up...</div>","hidemenus(); tutorial_nobullets=false;"); }
+function tuscr25() {
+	tutorial_nobullets=true; tutorialStage=25;
+	msgBox("<div style='text-align:left'>Great. Just keep following the path and I'll show you something cool.</div>","hidemenus(); tutorial_nobullets=false;"); }
+function tuscr26() {
+	tutorial_nobullets=true; tutorialStage=26;
+	msgBox("<div style='text-align:left'>Along with the ability to build turrets, if you have sufficient metal and your enemies are in a line, you can shoot them with a plasma bullet. Plasma goes through walls and other zombies, and deals a lot of damage. To shoot plasma - if you have the metal for it - press the Y key and then click to fire like normal.<br><br>Use your plasma gun to kill all these mutants at once!</div>","hidemenus(); tutorial_nobullets=false; tuspawnlots2(); tutorialStage=27;"); }
+function tuscr28() {
+	tutorial_nobullets=true; tutorialStage=28;
+	msgBox("<div style='text-align:left'>Well done. You now know all the basic controls of this game. I hope you've enjoyed this tutorial almost as much as you'll have playing the game.</div>","tutorial_nobullets=false; endTutorial();"); }
+function tuspawnlots2() {
+	spawnEnemy(1, 2560, 2940);spawnEnemy(1, 2560, 2940);spawnEnemy(1, 2560, 2940);
+	spawnEnemy(1, 2560, 2960);spawnEnemy(1, 2560, 2960);spawnEnemy(1, 2560, 2960);spawnEnemy(1, 2560, 2960);
+	spawnEnemy(1, 2560, 2980);spawnEnemy(1, 2560, 2980);spawnEnemy(1, 2560, 2980);spawnEnemy(1, 2560, 2980);
+	spawnEnemy(1, 2560, 3000);spawnEnemy(1, 2560, 3000);spawnEnemy(1, 2560, 3000);spawnEnemy(1, 2560, 3000);
+	spawnEnemy(1, 2560, 3000);spawnEnemy(1, 2560, 3000);spawnEnemy(1, 2560, 3000);spawnEnemy(1, 2560, 3000);
+}
 function updateTutorialScript() {
 	if(tutorialStage==2) {
 		if(Math.abs(playerX-3118)<10 && Math.abs(playerY-3052)<10) tuscr3();
@@ -1057,6 +1220,39 @@ function updateTutorialScript() {
 	}
 	if(tutorialStage==8) {
 		if(activeEnemies.length===0) tuscr9();
+	}
+	if(tutorialStage==10) {
+		if(activeEnemies.length===0) tuscr11();
+	}
+	if(tutorialStage==11) {
+		if(Math.abs(playerX-3200)<10 && Math.abs(playerY-2820)<10) tuscr12();
+	}
+	if(tutorialStage==14) {
+		if(activeEnemies.length===0) tuscr15();
+	}
+	if(tutorialStage==16) {
+		if(activeDrops.length===0) tuscr17();
+	}
+	if(tutorialStage==18) {
+		if(activeTurrets.length>0) tuscr19();
+	}
+	if(tutorialStage==20) {
+		if(activeEnemies.length===0) tuscr21();
+	}
+	if(tutorialStage==21) {
+		if(Math.abs(playerX-2737)<10 && Math.abs(playerY-2700)<10) tuscr22();
+	}
+	if(tutorialStage==23) {
+		if(activeEnemies.length===0) tuscr24();
+	}
+	if(tutorialStage==24) {
+		if(activeDrops.length===0) tuscr25();
+	}
+	if(tutorialStage==25) {
+		if(Math.abs(playerX-2560)<10 && Math.abs(playerY-2780)<10) tuscr26();
+	}
+	if(tutorialStage==27) {
+		if(activeEnemies.length===0) tuscr28();
 	}
 }
 creditspos=600;
@@ -1085,7 +1281,7 @@ setInterval(function() {
 	}
 	if(playerHealth <= 0) loseGame();
 	if(tutorial) updateTutorialScript();
-	fallout+=1/60;
+	fallout+=1/200;
 },15);
 
 doAnimations=function() {
@@ -1103,6 +1299,9 @@ doAnimations=function() {
 		var e=activeEnemies[i],el=document.getElementById(e.id);
 		el.style.left = e.x+"px"; el.style.top = e.y+"px"; el.style.zIndex = e.y;
 		document.getElementById(e.id+"hi").style.width=(20/e.maxhealth*e.health) +"px";
+	}
+	for(i = 0; i < activeDrops.length; i++) {
+		if(Math.abs(activeDrops[i].x-playerX)<12 && Math.abs(activeDrops[i].y-playerY)<12) pickup(i);
 	}
 	document.getElementById('playerAvatar').style.left = playerX+"px";
 	document.getElementById('playerAvatar').style.top = playerY+"px";
