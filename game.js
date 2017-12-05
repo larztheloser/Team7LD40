@@ -705,9 +705,9 @@ function spawnEnemyNearEdge(type) {
 				if(x<=mappadding) return; }
 			break;
 	}
-	var enemyspeed=playerSpeed*(Math.random()*0.7+0.4)*((fallout+500)/1000);
+	var enemyspeed=playerSpeed*(Math.random()*1.0+0.4)*((fallout+500)/1000);
 	if(type==2) enemyspeed=enemyspeed*0.45;
-	if(type==3) enemyspeed=playerSpeed*(Math.random()*0.4+0.8)*((fallout+500)/1000);
+	if(type==3) enemyspeed=playerSpeed*(Math.random()*0.6+0.8)*((fallout+500)/1000);
 	var enemyhealth=5*((fallout+500)/1000);
 	if(type==2) enemyhealth=12*((fallout+500)/1000);
 	if(type==3) enemyhealth=2*((fallout+500)/1000);
@@ -1279,6 +1279,16 @@ setInterval(function() {
 		if(Math.random()<-0.0015+fallout/21500) spawnEnemyNearEdge(2);
 		if(Math.random()<-0.006+fallout/20000) spawnEnemyNearEdge(3);
 	}
+	
+	if(inContaminatedSpace(playerX, playerY)) {
+		var time = pt();
+		if(time - playerLastAttacked > playerInvulnTime) {
+			playerHealth -= 0.5;
+			playerLastAttacked = time;
+			getResource("sfxEH").play();
+		}
+	}
+	
 	if(playerHealth <= 0) loseGame();
 	if(tutorial) updateTutorialScript();
 	fallout+=1/200;
